@@ -18,6 +18,12 @@ namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
 
+    // Declaration of the top-level WRENCH simulation object
+    wrench::Simulation simulation;
+
+    // Initialization of the simulation
+    simulation.init(&argc, argv);
+
     // Generic lambda to check if a numeric argument is in some range
     auto in = [](const auto &min, const auto &max, char const * const opt_name) {
         return [opt_name, min, max](const auto &v){
@@ -58,11 +64,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // Declaration of the top-level WRENCH simulation object
-    wrench::Simulation simulation;
-
-    // Initialization of the simulation
-    simulation.init(&argc, argv);
 
     // Creation of the platform
     std::string wms_host = "wms_host";
