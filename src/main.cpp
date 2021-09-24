@@ -113,9 +113,12 @@ int main(int argc, char **argv) {
     auto wms_ss = simulation.add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
     storage_services.insert(wms_ss);
 
+    // Create a file registry service
+    auto file_registry_service = simulation.add(new wrench::FileRegistryService(wms_host));
+
     // Create the WMS
     auto wms = simulation.add(
-            new SimpleWMS(compute_services, storage_services, wms_host));
+            new SimpleWMS(compute_services, storage_services, file_registry_service, wms_host));
 
 
     // Parse the workflow
@@ -125,8 +128,6 @@ int main(int argc, char **argv) {
     // Add it to the WMS
     wms->addWorkflow(workflow);
 
-    // Create a file registry service
-    simulation.add(new wrench::FileRegistryService(wms_host));
 
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {

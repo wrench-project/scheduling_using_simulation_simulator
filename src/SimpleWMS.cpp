@@ -19,12 +19,13 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_wms, "Log category for Simple WMS");
  */
 SimpleWMS::SimpleWMS(const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
+                     const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
                      const std::string &hostname) : wrench::WMS(
         nullptr,
         nullptr,
         compute_services,
         storage_services,
-        {}, nullptr,
+        {}, file_registry_service,
         hostname,
         "simple") {}
 
@@ -44,6 +45,7 @@ int SimpleWMS::main() {
     this->job_manager = this->createJobManager();
     this->data_movement_manager = this->createDataMovementManager();
     this->file_registry_service = this->getAvailableFileRegistryService();
+    std::cerr << "___> " << this->file_registry_service << "\n";
 
     // Initialize the scheduler
     auto my_scheduler = new SimpleStandardJobScheduler();
@@ -88,4 +90,21 @@ int SimpleWMS::main() {
     this->job_manager.reset();
 
     return 0;
+}
+
+void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) {
+    auto task = event->standard_job->getTasks().at(0);
+    auto created_files = task->getOutputFiles();
+    auto cs = event->compute_service;
+    std::shared_ptr<wrench::StorageService> target_ss;
+    for (auto const &ss : this->getAvailableStorageServices()) {
+        if (ss->getHostname() == cs->getHostname()) {
+            target_ss = ss;
+            break;
+        }
+    }
+    for (auto const &f : created_files) {
+        this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
+    }
+    return;
 }
