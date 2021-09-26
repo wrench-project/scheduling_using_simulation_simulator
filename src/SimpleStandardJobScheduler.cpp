@@ -10,8 +10,42 @@
 #include "SimpleStandardJobScheduler.h"
 
 #include <utility>
+#include <algorithm>
 
 XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler, "Log category for Simple Scheduler");
+
+SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
+
+    /** Setting/Defining the task priority scheme **/
+    this->task_priority_schemes["max_flops"] = [](const wrench::WorkflowTask *a,
+                                                      const wrench::WorkflowTask *b) -> bool {
+        if (a->getFlops() < b->getFlops()) {
+            return true;
+        } else if (a->getFlops() > b->getFlops()) {
+            return false;
+        } else {
+            return ((unsigned long) a < (unsigned long) b);
+        }
+    };
+
+    /** Setting/Defining the service selection scheme **/
+    this->service_selection_schemes["fastest_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
+        for (auto const &s : services) {
+            if ((picked == nullptr) or (s->getCoreFlopRate().begin()->second > picked->getCoreFlopRate().begin()->second)) {
+                picked = s;
+            }
+        }
+        return picked;
+    };
+
+    /** Setting/Defining the core selection scheme **/
+    this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> int {
+        return (int)(task->getMinNumCores());
+    };
+
+
+}
 
 
 void SimpleStandardJobScheduler::init(
@@ -65,19 +99,54 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
 }
 
+bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
+
+
+    auto idle_cores = service->getPerHostNumIdleCores();
+    for (auto const &spec : idle_cores) {
+        if (spec.second >= task->getMinNumCores()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks) {
+
+    std::sort(tasks.begin(), tasks.end(),
+              this->task_priority_schemes[std::get<0>(this->scheduling_algorithms.at(this->current_scheduler))]);
+
+}
 
 /** Returns true if found something **/
 bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
                                               std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
                                               int *picked_num_cores) {
 
-    *picked_service = *(this->compute_services.begin());
-    *picked_num_cores = 1;
+
+    // Weed out impossible services
+    std::set<std::shared_ptr<wrench::BareMetalComputeService>>  possible_services;
+    for (auto const &s : this->compute_services) {
+        if (this->taskCanRunOn(task, s)) {
+            possible_services.insert(s);
+        }
+    }
+
+    if (possible_services.empty()) {
+        *picked_service = nullptr;
+        *picked_num_cores = 0;
+        return false;
+    }
+
+    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms.at(this->current_scheduler))](task, possible_services);
+    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms.at(this->current_scheduler))](task, *picked_service);
 
     return true;
 }
 
-void SimpleStandardJobScheduler::scheduleTasks(const std::vector<wrench::WorkflowTask *> &tasks) {
+void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask *> tasks) {
+
+    prioritizeTasks(tasks);
 
     for (auto task : tasks) {
 
@@ -123,6 +192,21 @@ void SimpleStandardJobScheduler::scheduleTasks(const std::vector<wrench::Workflo
 
     }
     WRENCH_INFO("Done with scheduling tasks as standard jobs");
+}
+
+void SimpleStandardJobScheduler::addSchedulingAlgorithm(std::string spec) {
+
+    stringstream ss(spec);
+    std::vector<std::string> tokens;
+    string item;
+    while (getline(ss, item, ':')) {
+        tokens.push_back (item);
+    }
+    if (tokens.size() != 3) {
+        throw std::invalid_argument("Invalid scheduler specification '" + spec + "'");
+    }
+    this->scheduling_algorithms.push_back(std::make_tuple(tokens.at(0), tokens.at(1), tokens.at(2)));
+
 }
 
 

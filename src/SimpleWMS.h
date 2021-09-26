@@ -12,6 +12,7 @@
 
 #include <wrench-dev.h>
 
+class SimpleStandardJobScheduler;
 class Simulation;
 
 /**
@@ -19,14 +20,20 @@ class Simulation;
  */
 class SimpleWMS : public wrench::WMS {
 public:
-    SimpleWMS(const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
+    SimpleWMS(SimpleStandardJobScheduler *scheduler,
+              const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
               const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
               const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
               const std::string &hostname);
 
 private:
+
+
     int main() override;
     void processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) override;
+    void processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) override;
+
+    SimpleStandardJobScheduler *scheduler;
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;

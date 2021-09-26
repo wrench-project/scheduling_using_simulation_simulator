@@ -46,6 +46,16 @@ int main(int argc, char **argv) {
              "Path to JSON workflow description file")
             ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
              "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\".")
+            ("scheduler", po::value<std::vector<std::string>>()->value_name("taskscheme:hostscheme:corescheme"),
+            "Scheduling algorithm specification\n"
+            "Task prioritization scheme:\n"
+            "  - increasing_flops\n"
+            "Service selection scheme:\n"
+            "  - fastest_cores\n"
+            "Core selection cheme:\n"
+            "  - mininum\n")
+            ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
+                    "Scheduling algorithm specification (see above)")
             ;
 
     // Parse command-line arguments
@@ -64,7 +74,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-
     // Creation of the platform
     std::string wms_host = "wms_host";
     try {
@@ -75,6 +84,17 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    auto scheduler = new SimpleStandardJobScheduler();
+
+//    std::cerr << vm["initial_scheduler"].as<std::string>() << "\n ";
+    scheduler->addSchedulingAlgorithm(vm["initial_scheduler"].as<std::string>());
+
+    if (vm.count("scheduler")) {
+        // Parsing of the other scheduler specs, if any
+        for (auto const &spec : vm["scheduler"].as<std::vector<std::string>>()) {
+            scheduler->addSchedulingAlgorithm(spec);
+        }
+    }
 
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
     std::set<std::shared_ptr<wrench::ComputeService>> compute_services;
@@ -118,12 +138,12 @@ int main(int argc, char **argv) {
 
     // Create the WMS
     auto wms = simulation.add(
-            new SimpleWMS(compute_services, storage_services, file_registry_service, wms_host));
+            new SimpleWMS(scheduler, compute_services, storage_services, file_registry_service, wms_host));
 
 
     // Parse the workflow
     auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
-            workflow_file, "1000Gf");
+            workflow_file, "1000Gf", false, 1, 32, true);
 
     // Add it to the WMS
     wms->addWorkflow(workflow);

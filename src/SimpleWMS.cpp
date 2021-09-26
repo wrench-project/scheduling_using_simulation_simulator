@@ -17,7 +17,8 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_wms, "Log category for Simple WMS");
 /**
  * @brief Create a Simple WMS with a workflow instance, a scheduler implementation, and a list of compute services
  */
-SimpleWMS::SimpleWMS(const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
+SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
+                     const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
                      const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
                      const std::string &hostname) : wrench::WMS(
@@ -27,7 +28,9 @@ SimpleWMS::SimpleWMS(const std::set<std::shared_ptr<wrench::ComputeService>> &co
         storage_services,
         {}, file_registry_service,
         hostname,
-        "simple") {}
+        "simple")  {
+    this->scheduler = scheduler;
+}
 
 /**
  * @brief main method of the SimpleWMS daemon
@@ -45,16 +48,14 @@ int SimpleWMS::main() {
     this->job_manager = this->createJobManager();
     this->data_movement_manager = this->createDataMovementManager();
     this->file_registry_service = this->getAvailableFileRegistryService();
-    std::cerr << "___> " << this->file_registry_service << "\n";
 
     // Initialize the scheduler
-    auto my_scheduler = new SimpleStandardJobScheduler();
 
-    my_scheduler->init(this->job_manager,
-                       this->getAvailableComputeServices<wrench::BareMetalComputeService>(),
-                       this->getAvailableStorageServices(),
-                       this->file_registry_service,
-                       wrench::Simulation::getHostName());
+    this->scheduler->init(this->job_manager,
+                          this->getAvailableComputeServices<wrench::BareMetalComputeService>(),
+                          this->getAvailableStorageServices(),
+                          this->file_registry_service,
+                          wrench::Simulation::getHostName());
 
     while (true) {
         // Get the ready tasks
@@ -69,7 +70,7 @@ int SimpleWMS::main() {
         }
 
         // Run ready tasks with defined scheduler implementation
-        my_scheduler->scheduleTasks(ready_tasks);
+        this->scheduler->scheduleTasks(ready_tasks);
 
         // Wait for a workflow execution event, and process it
         try {
@@ -106,5 +107,8 @@ void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::Standa
     for (auto const &f : created_files) {
         this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
     }
-    return;
+}
+
+void SimpleWMS::processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) {
+    throw std::runtime_error("Job Failure shouldn't happen!");
 }
