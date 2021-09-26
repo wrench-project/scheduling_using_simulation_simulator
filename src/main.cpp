@@ -13,6 +13,7 @@
 #include "PlatformCreator.h"
 #include <memory>
 #include <boost/program_options.hpp>
+#include <random>
 
 namespace po = boost::program_options;
 
@@ -47,15 +48,15 @@ int main(int argc, char **argv) {
             ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
              "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\".")
             ("scheduler", po::value<std::vector<std::string>>()->value_name("taskscheme:hostscheme:corescheme"),
-            "Scheduling algorithm specification\n"
-            "Task prioritization scheme:\n"
-            "  - increasing_flops\n"
-            "Service selection scheme:\n"
-            "  - fastest_cores\n"
-            "Core selection cheme:\n"
-            "  - mininum\n")
+             "Scheduling algorithm specification\n"
+             "Task prioritization scheme:\n"
+             "  - increasing_flops\n"
+             "Service selection scheme:\n"
+             "  - fastest_cores\n"
+             "Core selection cheme:\n"
+             "  - mininum\n")
             ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
-                    "Scheduling algorithm specification (see above)")
+             "Scheduling algorithm specification (see above)")
             ;
 
     // Parse command-line arguments
@@ -144,6 +145,14 @@ int main(int argc, char **argv) {
     // Parse the workflow
     auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
             workflow_file, "1000Gf", false, 1, 32, true);
+
+    // Set the amdahl parameter for each task between 0.8 and 1.0
+    std::uniform_real_distribution<double> random_dist(0.8, 1.0);
+    std::mt19937 rng;
+    rng.seed(42);
+    for (auto const &t : workflow->getTasks()) {
+        t->setParallelModel(wrench::ParallelModel::AMDAHL(random_dist(rng)));
+    }
 
     // Add it to the WMS
     wms->addWorkflow(workflow);
