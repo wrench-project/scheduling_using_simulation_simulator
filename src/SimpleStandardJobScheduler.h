@@ -31,8 +31,14 @@ public:
     std::string getTaskPrioritySchemeDocumentation();
     std::string getServiceSelectionSchemeDocumentation();
     std::string getCoreSelectionSchemeDocumentation();
+    void printAllSchemes();
 
 private:
+
+    void initTaskPrioritySchemes();
+    void initServiceSelectionSchemes();
+    void initCoreSelectionSchemes();
+
     void prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks);
     bool scheduleTask(wrench::WorkflowTask *task,
                       std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
@@ -41,7 +47,7 @@ private:
     std::shared_ptr<wrench::FileLocation> pick_location(const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
                                                         wrench::WorkflowFile *file);
 
-    bool taskCanRunOn(wrench::WorkflowTask *task, const std::shared_ptr<wrench::BareMetalComputeService> service);
+    bool taskCanRunOn(wrench::WorkflowTask *task, std::shared_ptr<wrench::BareMetalComputeService> service);
 
 
         std::vector<std::tuple<std::string, std::string, std::string>> scheduling_algorithms;
@@ -49,7 +55,7 @@ private:
 
     std::map<std::string, std::function<bool(const wrench::WorkflowTask* a, const wrench::WorkflowTask* b)>> task_priority_schemes;
     std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> service_selection_schemes;
-    std::map<std::string, std::function<int(const wrench::WorkflowTask* a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
+    std::map<std::string, std::function<unsigned long(const wrench::WorkflowTask* a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
 
 
     std::shared_ptr<wrench::FileRegistryService> file_registry_service;

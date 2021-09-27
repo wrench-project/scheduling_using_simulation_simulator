@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
              scheduler_doc.c_str())
             ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
              "Scheduling algorithm specification (see above)")
+            ("print_all_schedulers",
+             "Print all scheduler combinations")
             ;
 
     // Parse command-line arguments
@@ -76,6 +78,10 @@ int main(int argc, char **argv) {
         // Print help message and exit if needed
         if (vm.count("help")) {
             cout << desc << "\n";
+            exit(0);
+        }
+        if (vm.count("print_all_schedulers")) {
+            scheduler->printAllSchemes();
             exit(0);
         }
         // Throw whatever exception in case argument values are erroneous
@@ -173,14 +179,14 @@ int main(int argc, char **argv) {
     }
 
     // Launch the simulation
-    std::cerr << "Launching the Simulation..." << std::endl;
+//    std::cerr << "Launching the Simulation..." << std::endl;
     try {
         simulation.launch();
     } catch (std::runtime_error &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 0;
     }
-    std::cerr << "Simulation done!" << std::endl;
+//    std::cerr << "Simulation done!" << std::endl;
     std::cout << workflow->getCompletionDate() << "\n";
 
     return 0;

@@ -5,6 +5,11 @@ project(scheduling-with-simulation)
 
 add_definitions("-Wall -Wno-unused-variable -Wno-unused-private-field")
 
+# Make Release the default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
@@ -22,6 +27,9 @@ set(SOURCE_FILES
         src/SimpleWMS.cpp
         src/SimpleStandardJobScheduler.h
         src/SimpleStandardJobScheduler.cpp
+        src/scheduling_algorithms/TaskPrioritySchemes.cpp
+        src/scheduling_algorithms/ServiceSelectionSchemes.cpp
+        src/scheduling_algorithms/CoreSelectionSchemes.cpp
         src/main.cpp
         src/PlatformCreator.cpp
         src/PlatformCreator.h

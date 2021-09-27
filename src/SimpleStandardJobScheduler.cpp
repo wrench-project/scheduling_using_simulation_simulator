@@ -16,79 +16,9 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler, "Log category for Simple Schedule
 
 SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
 
-    /** Setting/Defining the task priority scheme **/
-    this->task_priority_schemes["most_flops"] = [](const wrench::WorkflowTask *a,
-                                                      const wrench::WorkflowTask *b) -> bool {
-        if (a->getFlops() < b->getFlops()) {
-            return true;
-        } else if (a->getFlops() > b->getFlops()) {
-            return false;
-        } else {
-            return ((unsigned long) a < (unsigned long) b);
-        }
-    };
-    this->task_priority_schemes["most_data"] = [](const wrench::WorkflowTask *a,
-                                                   const wrench::WorkflowTask *b) -> bool {
-        double a_bytes = 0.0, b_bytes = 0.0;
-        for (auto const &f : a->getInputFiles()) {
-            a_bytes += f->getSize();
-        }
-        for (auto const &f : b->getInputFiles()) {
-            b_bytes += f->getSize();
-        }
-
-        if (a_bytes < b_bytes) {
-            return true;
-        } else if (a_bytes > b_bytes) {
-            return false;
-        } else {
-            return ((unsigned long) a < (unsigned long) b);
-        }
-    };
-
-    /** Setting/Defining the service selection scheme **/
-    this->service_selection_schemes["fastest_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getCoreFlopRate().begin()->second > picked->getCoreFlopRate().begin()->second)) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
-    this->service_selection_schemes["slowest_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getCoreFlopRate().begin()->second < picked->getCoreFlopRate().begin()->second)) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
-    this->service_selection_schemes["most_idle_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getTotalNumIdleCores() > picked->getTotalNumIdleCores())) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
-    this->service_selection_schemes["least_idle_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getTotalNumIdleCores() < picked->getTotalNumIdleCores())) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
-
-    /** Setting/Defining the core selection scheme **/
-    this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> int {
-        return (int)(task->getMinNumCores());
-    };
-
+    this->initTaskPrioritySchemes();
+    this->initServiceSelectionSchemes();
+    this->initCoreSelectionSchemes();
 
 }
 
@@ -286,4 +216,15 @@ std::string SimpleStandardJobScheduler::getCoreSelectionSchemeDocumentation() {
         documentation += "  - " + e.first + "\n";
     }
     return documentation;
+}
+
+void SimpleStandardJobScheduler::printAllSchemes() {
+
+    for (auto const &e : this->task_priority_schemes) {
+        for (auto const &f : this->service_selection_schemes) {
+            for (auto const &g : this->core_selection_schemes) {
+                std::cout << e.first << ":" << f.first << ":" << g.first << "\n";
+            }
+        }
+    }
 }
