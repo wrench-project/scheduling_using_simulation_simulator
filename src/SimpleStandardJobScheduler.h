@@ -61,6 +61,8 @@ private:
     std::shared_ptr<wrench::FileRegistryService> file_registry_service;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
+    std::map<std::shared_ptr<wrench::BareMetalComputeService>, std::shared_ptr<wrench::StorageService>> map_compute_to_storage;
+
     std::shared_ptr<wrench::JobManager> job_manager;
     std::string wms_host;
 

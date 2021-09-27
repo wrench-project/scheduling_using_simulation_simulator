@@ -35,6 +35,16 @@ void SimpleStandardJobScheduler::init(
     this->file_registry_service = std::move(_file_registry_service);
     this->wms_host = wms_host;
 
+    // Create compute/storage map
+    for (auto const &cs : this->compute_services) {
+        for (auto const &ss : this->storage_services) {
+            if (ss->getHostname() == cs->getHostname()) {
+                this->map_compute_to_storage[cs] = ss;
+                break;
+            }
+        }
+    }
+
 }
 
 std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location(
@@ -52,7 +62,7 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
     // Pick the WMS host if file is there
     for (auto const &location : entries) {
-        if (location->getStorageService()->getHostname() == compute_service->getHostname()) {
+        if (location->getStorageService() == this->map_compute_to_storage[compute_service]) {
             picked_local_location = location;
             continue;
         }
@@ -152,16 +162,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
         }
 
         // Output file are all written locally
-        std::shared_ptr<wrench::StorageService> target_ss = nullptr;
-        for (const auto &ss : this->storage_services) {
-            if (ss->getHostname() == picked_service->getHostname()) {
-                target_ss = ss;
-                break;
-            }
-        }
-        if (target_ss == nullptr) {
-            throw std::runtime_error("Couldn't find SS associated to CS on host " + picked_service->getHostname());
-        }
+        std::shared_ptr<wrench::StorageService> target_ss = this->map_compute_to_storage[picked_service];
 
         for (auto f : task->getOutputFiles()) {
             file_locations.insert(std::make_pair(f, wrench::FileLocation::LOCATION(target_ss)));

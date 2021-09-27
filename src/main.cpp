@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
             compute_nodes.push_back(name+"-node-"+std::to_string(i));
         }
 
-        compute_services.insert(simulation.add(
+        auto cs = compute_services.insert(simulation.add(
                 new wrench::BareMetalComputeService(
                         head_node,
                         compute_nodes,
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
                         {},
                         {})));
 
-        storage_services.insert(simulation.add(
+        auto ss = storage_services.insert(simulation.add(
                 new wrench::SimpleStorageService(
                         head_node,
                         {"/"},

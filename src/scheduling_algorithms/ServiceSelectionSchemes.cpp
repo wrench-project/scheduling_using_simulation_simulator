@@ -55,5 +55,22 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         }
         return picked;
     };
+    this->service_selection_schemes["most_local_data"] = [this] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
+        double max_data_bytes = 0;
+        for (auto const &s : services) {
+            double data_bytes = 0;
+            auto storage_service = this->map_compute_to_storage[s];
+            for (auto const &f : task->getInputFiles()) {
+                if (wrench::StorageService::lookupFile(f, wrench::FileLocation::LOCATION(storage_service))) {
+                    data_bytes += f->getSize();
+                }
+            }
+            if ((picked == nullptr) or (data_bytes > max_data_bytes)) {
+                picked = s;
+            }
+        }
+        return picked;
+    };
 
 }
