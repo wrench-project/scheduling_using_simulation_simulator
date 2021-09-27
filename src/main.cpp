@@ -38,23 +38,33 @@ int main(int argc, char **argv) {
 
     std::string workflow_file;
 
+    // Creating the scheduler here so that we can grab the documentation for
+    // all scheduling schemes
+    auto scheduler = new SimpleStandardJobScheduler();
+
+    std::string scheduler_doc = "";
+    scheduler_doc += "* Task selection schemes:\n";
+    scheduler_doc += scheduler->getTaskPrioritySchemeDocumentation();
+    scheduler_doc += "* Service selection schemes:\n";
+    scheduler_doc += scheduler->getServiceSelectionSchemeDocumentation();
+    scheduler_doc += "* Core selection schemes:\n";
+    scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
+
+    std::string reference_flops;
+
     // Define command-line argument options
     po::options_description desc("Allowed options");
     desc.add_options()
             ("help",
-             "Show this help message")
+             "Show this help message\n")
             ("workflow", po::value<std::string>(&workflow_file)->required()->value_name("<path>"),
-             "Path to JSON workflow description file")
+             "Path to JSON workflow description file\n")
+            ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
+             "Reference flop rate for the workflow file tasks (e.g., \"100Gf\")\n")
             ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
-             "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\".")
+             "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\"\n")
             ("scheduler", po::value<std::vector<std::string>>()->value_name("taskscheme:hostscheme:corescheme"),
-             "Scheduling algorithm specification\n"
-             "Task prioritization scheme:\n"
-             "  - increasing_flops\n"
-             "Service selection scheme:\n"
-             "  - fastest_cores\n"
-             "Core selection cheme:\n"
-             "  - mininum\n")
+             scheduler_doc.c_str())
             ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
              "Scheduling algorithm specification (see above)")
             ;
@@ -85,7 +95,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    auto scheduler = new SimpleStandardJobScheduler();
 
 //    std::cerr << vm["initial_scheduler"].as<std::string>() << "\n ";
     scheduler->addSchedulingAlgorithm(vm["initial_scheduler"].as<std::string>());
@@ -144,7 +153,7 @@ int main(int argc, char **argv) {
 
     // Parse the workflow
     auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
-            workflow_file, "1000Gf", false, 1, 32, true);
+            workflow_file, reference_flops, false, 1, 32, true);
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);
@@ -172,6 +181,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     std::cerr << "Simulation done!" << std::endl;
+    std::cout << workflow->getCompletionDate() << "\n";
 
     return 0;
 }

@@ -107,6 +107,8 @@ void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::Standa
     for (auto const &f : created_files) {
         this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
     }
+    std::cerr << ".";
+    std::cerr.flush();
 }
 
 void SimpleWMS::processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) {

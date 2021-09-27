@@ -28,6 +28,10 @@ public:
             std::shared_ptr<wrench::FileRegistryService> file_registry_service,
             std::string wms_host);
 
+    std::string getTaskPrioritySchemeDocumentation();
+    std::string getServiceSelectionSchemeDocumentation();
+    std::string getCoreSelectionSchemeDocumentation();
+
 private:
     void prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks);
     bool scheduleTask(wrench::WorkflowTask *task,
