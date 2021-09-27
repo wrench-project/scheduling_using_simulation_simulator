@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 #include <iostream>
+#include <sys/wait.h>
 
 #include "SimpleWMS.h"
 #include "SimpleStandardJobScheduler.h"
@@ -18,6 +19,7 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_wms, "Log category for Simple WMS");
  * @brief Create a Simple WMS with a workflow instance, a scheduler implementation, and a list of compute services
  */
 SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
+                     double scheduler_change_trigger,
                      const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
                      const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -28,8 +30,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
         storage_services,
         {}, file_registry_service,
         hostname,
-        "simple")  {
-    this->scheduler = scheduler;
+        "simple"),  scheduler(scheduler), scheduler_change_trigger(scheduler_change_trigger)  {
 }
 
 /**
@@ -57,7 +58,59 @@ int SimpleWMS::main() {
                           this->file_registry_service,
                           wrench::Simulation::getHostName());
 
+    // Compute the total work
+    double total_work = 0.0;
+    for (auto const &t : this->getWorkflow()->getTasks()) {
+        total_work += t->getFlops();
+    }
+
+    // Pipe used for communication with child
+    int pipefd[2];
+
     while (true) {
+        // Scheduler change?
+        if ((not this->i_am_speculative) and
+            (this->work_done_since_last_scheduler_change > this->scheduler_change_trigger * total_work) and
+            (this->scheduler->getNumSchedulingAlgorithms() > 1)) {
+            this->work_done_since_last_scheduler_change = 0.0;
+            std::cerr << "SHOULD BE LOOKING AT RESCHEDULING!\n";
+            std::vector<double> makespans;
+            for (int i=0; i < this->scheduler->getNumSchedulingAlgorithms(); i++) {
+                pipe(pipefd);
+                std::cerr << "STARTING A CHILD TO LOOK AT ALGORITHM " << i << "\n";
+                auto pid = fork();
+                if (!pid) {
+                    // Child
+                    // Make the child mute
+                    close(STDOUT_FILENO);
+                    // Close the read end of the pipe
+                    close(pipefd[0]);
+//                    std::cerr << "   I AM A CHILD DOING ALGO " << i << "\n";
+                    this->scheduler->setSchedulingAlgorithm(i);
+                    this->i_am_speculative = true;
+                    break;
+                } else {
+                    // Parent
+                    close(pipefd[1]);
+                    int stat_loc;
+                    double child_time;
+                    read(pipefd[0], &child_time, sizeof(double));
+                    std::cerr << "CHILD THAT LOOKED AT ALGO " << i << " GAVE MAKESPAN: " << child_time << "\n";
+                    makespans.push_back(child_time);
+                    waitpid(pid, &stat_loc, 0);
+//                    std::cerr << "CHILD EXITED: " << WEXITSTATUS(stat_loc) << "\n";
+//                    break;
+                }
+            }
+            if (not this->i_am_speculative) {
+                int minElementIndex = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
+                std::cerr << "THE BEST SCHEDULER WAS " << minElementIndex << "\n";
+                std::cerr << "SO I AM SWITCHING TO IT!\n";
+                this->scheduler->setSchedulingAlgorithm(minElementIndex);
+                std::cerr << "----------------------------\n";
+            }
+        }
+
         // Get the ready tasks
         std::vector<wrench::WorkflowTask *> ready_tasks = this->getWorkflow()->getReadyTasks();
 
@@ -86,8 +139,12 @@ int SimpleWMS::main() {
         }
     }
 
-    wrench::Simulation::sleep(10);
-
+    if (this->i_am_speculative) {
+        double now = wrench::Simulation::getCurrentSimulatedDate();
+        write(pipefd[1], &now, sizeof(double));
+        close(pipefd[1]);
+//        std::cerr << "   CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
+    }
     this->job_manager.reset();
 
     return 0;
@@ -95,6 +152,7 @@ int SimpleWMS::main() {
 
 void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) {
     auto task = event->standard_job->getTasks().at(0);
+    this->work_done_since_last_scheduler_change += task->getFlops();
     auto created_files = task->getOutputFiles();
     auto cs = event->compute_service;
     std::shared_ptr<wrench::StorageService> target_ss;

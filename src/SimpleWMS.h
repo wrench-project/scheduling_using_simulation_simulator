@@ -21,6 +21,7 @@ class Simulation;
 class SimpleWMS : public wrench::WMS {
 public:
     SimpleWMS(SimpleStandardJobScheduler *scheduler,
+              double scheduler_change_trigger,
               const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
               const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
               const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -34,6 +35,9 @@ private:
     void processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) override;
 
     SimpleStandardJobScheduler *scheduler;
+    double scheduler_change_trigger;
+    double work_done_since_last_scheduler_change = 0.0;
+    bool i_am_speculative = false;
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;

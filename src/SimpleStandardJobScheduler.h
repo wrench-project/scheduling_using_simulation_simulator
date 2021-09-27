@@ -21,6 +21,9 @@ public:
 
     void addSchedulingAlgorithm(std::string spec);
 
+    void setSchedulingAlgorithm(int scheduler_index) { this->current_scheduler = scheduler_index; }
+    int getNumSchedulingAlgorithms() { return this->scheduling_algorithms.size(); }
+
     void init(
             std::shared_ptr<wrench::JobManager> job_manager,
             std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
@@ -50,7 +53,7 @@ private:
     bool taskCanRunOn(wrench::WorkflowTask *task, std::shared_ptr<wrench::BareMetalComputeService> service);
 
 
-        std::vector<std::tuple<std::string, std::string, std::string>> scheduling_algorithms;
+    std::vector<std::tuple<std::string, std::string, std::string>> scheduling_algorithms;
     int current_scheduler = 0;
 
     std::map<std::string, std::function<bool(const wrench::WorkflowTask* a, const wrench::WorkflowTask* b)>> task_priority_schemes;

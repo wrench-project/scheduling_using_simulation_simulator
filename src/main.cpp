@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
     scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
 
     std::string reference_flops;
+    double scheduler_change_trigger;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -67,6 +68,8 @@ int main(int argc, char **argv) {
              scheduler_doc.c_str())
             ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
              "Scheduling algorithm specification (see above)")
+            ("scheduler_change_trigger", po::value<double>(&scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
+             ("The scheduler algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")"))
             ("print_all_schedulers",
              "Print all scheduler combinations")
             ;
@@ -154,7 +157,8 @@ int main(int argc, char **argv) {
 
     // Create the WMS
     auto wms = simulation.add(
-            new SimpleWMS(scheduler, compute_services, storage_services, file_registry_service, wms_host));
+            new SimpleWMS(scheduler, scheduler_change_trigger,
+                          compute_services, storage_services, file_registry_service, wms_host));
 
 
     // Parse the workflow
