@@ -1,12 +1,12 @@
 /**
- * Copyright (c) 2020. <ADD YOUR HEADER INFORMATION>.
- * Generated with the wrench-init.in tool.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- */
+* Copyright (c) 2020. <ADD YOUR HEADER INFORMATION>.
+* Generated with the wrench-init.in tool.
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*/
 #include <iostream>
 #include <sys/wait.h>
 
@@ -16,10 +16,12 @@
 XBT_LOG_NEW_DEFAULT_CATEGORY(simple_wms, "Log category for Simple WMS");
 
 /**
- * @brief Create a Simple WMS with a workflow instance, a scheduler implementation, and a list of compute services
- */
+* @brief Create a Simple WMS with a workflow instance, a scheduler implementation, and a list of compute services
+*/
 SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
-                     double scheduler_change_trigger,
+                     double first_scheduler_change_trigger,
+                     double periodic_scheduler_change_trigger,
+                     double speculative_work_fraction,
                      const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
                      const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -30,27 +32,31 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
         storage_services,
         {}, file_registry_service,
         hostname,
-        "simple"),  scheduler(scheduler), scheduler_change_trigger(scheduler_change_trigger)  {
+        "simple"),
+                                                    scheduler(scheduler),
+                                                    first_scheduler_change_trigger(first_scheduler_change_trigger),
+                                                    periodic_scheduler_change_trigger(periodic_scheduler_change_trigger),
+                                                    speculative_work_fraction(speculative_work_fraction) {
 }
 
 /**
- * @brief main method of the SimpleWMS daemon
- */
+* @brief main method of the SimpleWMS daemon
+*/
 int SimpleWMS::main() {
 
     wrench::TerminalOutput::setThisProcessLoggingColor(wrench::TerminalOutput::COLOR_GREEN);
 
-    // Check whether the WMS has a deferred start time
+// Check whether the WMS has a deferred start time
     checkDeferredStart();
 
     WRENCH_INFO("About to execute a workflow with %lu tasks", this->getWorkflow()->getNumberOfTasks());
 
-    // Create a job manager
+// Create a job manager
     this->job_manager = this->createJobManager();
     this->data_movement_manager = this->createDataMovementManager();
     this->file_registry_service = this->getAvailableFileRegistryService();
 
-    // Initialize the scheduler
+// Initialize the scheduler
 
     this->scheduler->init(this->job_manager,
                           this->getAvailableComputeServices<wrench::BareMetalComputeService>(),
@@ -58,26 +64,30 @@ int SimpleWMS::main() {
                           this->file_registry_service,
                           wrench::Simulation::getHostName());
 
-    // Compute the total work
+// Compute the total work
     double total_work = 0.0;
     for (auto const &t : this->getWorkflow()->getTasks()) {
         total_work += t->getFlops();
     }
 
-    // Pipe used for communication with child
+// Pipe used for communication with child
     int pipefd[2];
 
     while (true) {
+
         // Scheduler change?
-        if ((not this->i_am_speculative) and
-            (this->work_done_since_last_scheduler_change > this->scheduler_change_trigger * total_work) and
-            (this->scheduler->getNumSchedulingAlgorithms() > 1)) {
+        if (((not this->i_am_speculative) and (this->scheduler->getNumSchedulingAlgorithms() > 1)) and
+            (((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change > this->first_scheduler_change_trigger * total_work)) or
+             (this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work)))) {
+            this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
-            std::cerr << "SHOULD BE LOOKING AT RESCHEDULING!\n";
+            std::cerr << "Exploring scheduling algorithm futures speculatively... ";
+            std::cerr.flush();
+//            std::cerr << "SHOULD BE LOOKING AT RESCHEDULING!\n";
             std::vector<double> makespans;
             for (int i=0; i < this->scheduler->getNumSchedulingAlgorithms(); i++) {
                 pipe(pipefd);
-                std::cerr << "STARTING A CHILD TO LOOK AT ALGORITHM " << i << "\n";
+//                std::cerr << "STARTING A CHILD TO LOOK AT ALGORITHM " << i << "\n";
                 auto pid = fork();
                 if (!pid) {
                     // Child
@@ -95,7 +105,7 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     read(pipefd[0], &child_time, sizeof(double));
-                    std::cerr << "CHILD THAT LOOKED AT ALGO " << i << " GAVE MAKESPAN: " << child_time << "\n";
+//                    std::cerr << "CHILD THAT LOOKED AT ALGO " << i << " GAVE MAKESPAN: " << child_time << "\n";
                     makespans.push_back(child_time);
                     waitpid(pid, &stat_loc, 0);
 //                    std::cerr << "CHILD EXITED: " << WEXITSTATUS(stat_loc) << "\n";
@@ -104,11 +114,13 @@ int SimpleWMS::main() {
             }
             if (not this->i_am_speculative) {
                 int minElementIndex = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
-                std::cerr << "THE BEST SCHEDULER WAS " << minElementIndex << "\n";
-                std::cerr << "SO I AM SWITCHING TO IT!\n";
+                std::cerr << "Switching to algorithm " << minElementIndex << "\n";
                 this->scheduler->setSchedulingAlgorithm(minElementIndex);
-                std::cerr << "----------------------------\n";
             }
+        }
+
+        if (this->work_done_since_last_scheduler_change > this->speculative_work_fraction * total_work) {
+            break;
         }
 
         // Get the ready tasks

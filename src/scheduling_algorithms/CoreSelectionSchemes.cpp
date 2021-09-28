@@ -22,6 +22,7 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
     this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
         return (task->getMinNumCores());
     };
+
     this->core_selection_schemes["as_many_as_possible"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
         auto idle_cores = service->getPerHostNumIdleCores();
         unsigned long max = 0;
@@ -29,6 +30,22 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
             max = std::max<unsigned long>(max, h.second);
         }
         return std::min<unsigned long>(max, task->getMaxNumCores());
+    };
+
+    this->core_selection_schemes["parallel_efficiency_fifty_percent"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+        auto idle_cores = service->getPerHostNumIdleCores();
+        unsigned long max = 0;
+        for (auto const &h : idle_cores) {
+            max = std::max<unsigned long>(max, h.second);
+        }
+        auto model = std::dynamic_pointer_cast<wrench::AmdahlParallelModel>(task->getParallelModel());
+        for (unsigned long num_cores=max; num_cores >= 1; num_cores++) {
+            double efficiency = 1.0 / (1.0 * (1.0 - model->getAlpha()) + 1.0 * model->getAlpha() / (double)max);
+            if (efficiency >= .5) {
+                return num_cores;
+            }
+        }
+        return 1; // just in case
     };
 
 }

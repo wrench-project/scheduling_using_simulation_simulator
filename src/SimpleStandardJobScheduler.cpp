@@ -187,7 +187,16 @@ void SimpleStandardJobScheduler::addSchedulingAlgorithm(std::string spec) {
     if (tokens.size() != 3) {
         throw std::invalid_argument("Invalid scheduler specification '" + spec + "'");
     }
-    this->scheduling_algorithms.push_back(std::make_tuple(tokens.at(0), tokens.at(1), tokens.at(2)));
+    if (this->task_priority_schemes.find(tokens.at(0)) == this->task_priority_schemes.end()) {
+        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown task priority scheme '" + tokens.at(0) + "'");
+    }
+    if (this->service_selection_schemes.find(tokens.at(1)) == this->service_selection_schemes.end()) {
+        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown service selection scheme '" + tokens.at(1) + "'");
+    }
+    if (this->core_selection_schemes.find(tokens.at(2)) == this->core_selection_schemes.end()) {
+        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown core selection scheme '" + tokens.at(2) + "'");
+    }
+    this->scheduling_algorithms.emplace_back(tokens.at(0), tokens.at(1), tokens.at(2));
 
 }
 

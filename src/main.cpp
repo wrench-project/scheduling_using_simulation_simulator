@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     // all scheduling schemes
     auto scheduler = new SimpleStandardJobScheduler();
 
-    std::string scheduler_doc = "";
+    std::string scheduler_doc;
     scheduler_doc += "* Task selection schemes:\n";
     scheduler_doc += scheduler->getTaskPrioritySchemeDocumentation();
     scheduler_doc += "* Service selection schemes:\n";
@@ -51,7 +51,9 @@ int main(int argc, char **argv) {
     scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
 
     std::string reference_flops;
-    double scheduler_change_trigger;
+    double first_scheduler_change_trigger;
+    double periodic_scheduler_change_trigger;
+    double speculative_work_fraction;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -64,14 +66,18 @@ int main(int argc, char **argv) {
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\")\n")
             ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
              "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\"\n")
+            ("print_all_schedulers",
+             "Print all scheduler combinations")
             ("scheduler", po::value<std::vector<std::string>>()->value_name("taskscheme:hostscheme:corescheme"),
              scheduler_doc.c_str())
             ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
              "Scheduling algorithm specification (see above)")
-            ("scheduler_change_trigger", po::value<double>(&scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
+            ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
+             ("The scheduler algorithm may change for the first time once this fraction of the work has been performed (between 0.0 and 1, 0.0 meaning right away and 1.0 meaning \"never change\")"))
+            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
              ("The scheduler algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")"))
-            ("print_all_schedulers",
-             "Print all scheduler combinations")
+            ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0),
+             ("The fraction of work that a speculative execution performs before reporting to the master process (between 0.0 and 1, 1 meaning \"until workflow completion\")"))
             ;
 
     // Parse command-line arguments
@@ -104,15 +110,19 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-
 //    std::cerr << vm["initial_scheduler"].as<std::string>() << "\n ";
-    scheduler->addSchedulingAlgorithm(vm["initial_scheduler"].as<std::string>());
+    try {
+        scheduler->addSchedulingAlgorithm(vm["initial_scheduler"].as<std::string>());
 
-    if (vm.count("scheduler")) {
-        // Parsing of the other scheduler specs, if any
-        for (auto const &spec : vm["scheduler"].as<std::vector<std::string>>()) {
-            scheduler->addSchedulingAlgorithm(spec);
+        if (vm.count("scheduler")) {
+            // Parsing of the other scheduler specs, if any
+            for (auto const &spec : vm["scheduler"].as<std::vector<std::string>>()) {
+                scheduler->addSchedulingAlgorithm(spec);
+            }
         }
+    } catch (std::invalid_argument &e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        exit(1);
     }
 
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
@@ -132,7 +142,7 @@ int main(int argc, char **argv) {
             compute_nodes.push_back(name+"-node-"+std::to_string(i));
         }
 
-        auto cs = compute_services.insert(simulation.add(
+        compute_services.insert(simulation.add(
                 new wrench::BareMetalComputeService(
                         head_node,
                         compute_nodes,
@@ -140,7 +150,7 @@ int main(int argc, char **argv) {
                         {},
                         {})));
 
-        auto ss = storage_services.insert(simulation.add(
+        storage_services.insert(simulation.add(
                 new wrench::SimpleStorageService(
                         head_node,
                         {"/"},
@@ -157,7 +167,8 @@ int main(int argc, char **argv) {
 
     // Create the WMS
     auto wms = simulation.add(
-            new SimpleWMS(scheduler, scheduler_change_trigger,
+            new SimpleWMS(scheduler,
+                          first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
                           compute_services, storage_services, file_registry_service, wms_host));
 
 
@@ -167,8 +178,7 @@ int main(int argc, char **argv) {
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);
-    std::mt19937 rng;
-    rng.seed(42);
+    std::mt19937 rng(42);
     for (auto const &t : workflow->getTasks()) {
         t->setParallelModel(wrench::ParallelModel::AMDAHL(random_dist(rng)));
     }
