@@ -29,9 +29,7 @@ int main(int argc, char **argv) {
     auto in = [](const auto &min, const auto &max, char const * const opt_name) {
         return [opt_name, min, max](const auto &v){
             if (v < min || v > max) {
-                throw po::validation_error
-                        (po::validation_error::invalid_option_value,
-                         opt_name, std::to_string(v));
+                throw std::invalid_argument("Argument value for --" + std::string(opt_name) + " should be between " + std::to_string(min) + " and " + std::to_string(max));
             }
         };
     };
@@ -55,6 +53,7 @@ int main(int argc, char **argv) {
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
+    double simulation_noise;
 
 
     // Define command-line argument options
@@ -73,13 +72,17 @@ int main(int argc, char **argv) {
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
              "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
-            ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
-             ("The algorithm may change for the first time once this fraction of the work has been performed "
-              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n"))
-            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
-             ("The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\n"))
-            ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0),
-             ("The fraction of work that a speculative execution performs before reporting to the master process (between 0.0 and 1, 1 meaning \"until workflow completion\")"))
+            ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
+             "The algorithm may change for the first time once this fraction of the work has been performed "
+             "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n")
+            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "periodic_scheduler_change_trigger")),
+             "The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\n")
+            ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
+             "The fraction of work that a speculative execution performs before reporting to the master process "
+             "(between 0.0 and 1, 1 meaning \"until workflow completion\")")
+            ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
+             "The added uniformly distributed noise added to speculative simulation results "
+             "(between 0.0 and 1, 0 meaning \"perfectly accurate\")")
             ;
 
     // Parse command-line arguments
@@ -198,6 +201,7 @@ int main(int argc, char **argv) {
     auto wms = simulation.add(
             new SimpleWMS(scheduler,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
+                          simulation_noise,
                           compute_services, storage_services, file_registry_service, wms_host));
 
 

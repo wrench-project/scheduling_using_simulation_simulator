@@ -22,6 +22,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      double first_scheduler_change_trigger,
                      double periodic_scheduler_change_trigger,
                      double speculative_work_fraction,
+                     double simulation_noise,
                      const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
                      const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -36,7 +37,9 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     scheduler(scheduler),
                                                     first_scheduler_change_trigger(first_scheduler_change_trigger),
                                                     periodic_scheduler_change_trigger(periodic_scheduler_change_trigger),
-                                                    speculative_work_fraction(speculative_work_fraction) {
+                                                    speculative_work_fraction(speculative_work_fraction),
+                                                    simulation_noise(simulation_noise)
+                                                    {
 }
 
 /**
@@ -143,7 +146,13 @@ int SimpleWMS::main() {
     }
 
     if (this->i_am_speculative) {
+        // Get current time
         double now = wrench::Simulation::getCurrentSimulatedDate();
+        // Add noise
+        std::uniform_real_distribution<double> random_dist(-simulation_noise, simulation_noise);
+        std::mt19937 rng(getpid());
+        now = now + now * random_dist(rng);
+        // Send it back to the parent
         write(pipefd[1], &now, sizeof(double));
         close(pipefd[1]);
 //        std::cerr << "   CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
