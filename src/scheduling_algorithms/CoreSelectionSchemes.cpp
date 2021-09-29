@@ -21,8 +21,9 @@ unsigned long pickNumCoresWithBoundedEfficiency(const wrench::WorkflowTask* task
         max = std::max<unsigned long>(max, h.second);
     }
     auto model = std::dynamic_pointer_cast<wrench::AmdahlParallelModel>(task->getParallelModel());
-    for (unsigned long num_cores=max; num_cores >= 1; num_cores++) {
-        double efficiency = 1.0 / (1.0 * (1.0 - model->getAlpha()) + 1.0 * model->getAlpha() / (double)max);
+    for (unsigned long num_cores=max; num_cores >= 1; num_cores--) {
+        double efficiency = (1.0 / (1.0 * (1.0 - model->getAlpha()) + 1.0 * model->getAlpha() / (double)num_cores)) / num_cores;
+//        std::cerr << "   num_cores=" << num_cores << "  eff=" << efficiency << "\n";
         if (efficiency >= efficiency_bound) {
             return num_cores;
         }

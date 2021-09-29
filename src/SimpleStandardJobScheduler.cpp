@@ -132,9 +132,8 @@ bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
         return false;
     }
 
-    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))](task, possible_services);
-    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))](task, *picked_service);
-
+    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, possible_services);
+    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, *picked_service);
     return true;
 }
 
@@ -178,7 +177,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);
-        this->job_manager->submitJob(job, picked_service, {});
+        this->job_manager->submitJob(job, picked_service, {{task->getID(), std::to_string(picked_num_cores)}});
 
     }
 //    std::cerr << "DEBUG SCHEDULED " << num_scheduled_tasks << "\n";

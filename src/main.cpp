@@ -116,6 +116,8 @@ int main(int argc, char **argv) {
     {
         auto tokens = SimpleStandardJobScheduler::stringSplit(algorithm_list, ',');
 
+        bool first = true;
+
         try {
             for (const auto &s_index : tokens) {
                 unsigned long index_low, index_high;
@@ -127,19 +129,23 @@ int main(int argc, char **argv) {
                 } else if (range_tokens.size() == 2) {
                     index_high = std::strtol(range_tokens.at(1).c_str(), nullptr, 10);
                 } else {
-                    throw std::invalid_argument("X Invalid algorithm list range item " + s_index);
+                    throw std::invalid_argument("Invalid algorithm list range item " + s_index);
                 }
                 if (index_low > index_high) {
-                    throw std::invalid_argument("Y Invalid algorithm list range item " + s_index);
+                    throw std::invalid_argument("Invalid algorithm list range item " + s_index);
                 }
                 if (index_low >= scheduler->getNumAvailableSchedulingAlgorithms()) {
-                    throw std::invalid_argument("Z Invalid algorithm index " + s_index);
+                    throw std::invalid_argument("Invalid algorithm index " + s_index);
                 }
                 if (index_high >= scheduler->getNumAvailableSchedulingAlgorithms()) {
-                    throw std::invalid_argument("Q Invalid algorithm index " + s_index);
+                    throw std::invalid_argument("Invalid algorithm index " + s_index);
                 }
                 for (auto i = index_low; i <= index_high; i++) {
                     scheduler->enableSchedulingAlgorithm(i);
+                    if (first) {
+                        scheduler->useSchedulingAlgorithm(i);
+                        first = false;
+                    }
                 }
             }
         } catch (std::invalid_argument &e) {
