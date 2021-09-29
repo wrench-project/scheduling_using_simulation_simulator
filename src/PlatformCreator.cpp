@@ -1,4 +1,5 @@
 #include "PlatformCreator.h"
+#include "SimpleStandardJobScheduler.h"
 #include <wrench.h>
 
 std::tuple<sg4::NetZone*, simgrid::kernel::routing::NetPoint*, sg4::Link *>
@@ -142,12 +143,8 @@ void PlatformCreator::create_platform() const {
 
 
 std::tuple<std::string, int, int, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
-    stringstream ss (spec);
-    std::vector<std::string> tokens;
-    string item;
-    while (getline (ss, item, ':')) {
-        tokens.push_back (item);
-    }
+    auto tokens = SimpleStandardJobScheduler::stringSplit(spec, ':');
+
     if (tokens.size() != 5) {
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }

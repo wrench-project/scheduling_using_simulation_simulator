@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
-             "First one in the list will be used initially\nExample: --algorithms 3,12,0,1\n"
+             "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
              "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
              ("The algorithm may change for the first time once this fraction of the work has been performed "
@@ -114,24 +114,37 @@ int main(int argc, char **argv) {
 
     // Add all specified scheduling algorithms in oder to the scheduler
     {
-        stringstream ss(algorithm_list);
-        std::vector<std::string> tokens;
-        string item;
-        while (getline(ss, item, ',')) {
-            tokens.push_back(item);
-        }
+        auto tokens = SimpleStandardJobScheduler::stringSplit(algorithm_list, ',');
 
-        for (const auto &s_index : tokens) {
-            try {
-                unsigned int index = std::strtol(s_index.c_str(), nullptr, 10);
-                if (index >= scheduler->getNumAvailableSchedulingAlgorithms()) {
-                    throw std::invalid_argument("Invalid algorithm index " + s_index);
+        try {
+            for (const auto &s_index : tokens) {
+                unsigned long index_low, index_high;
+                auto range_tokens = SimpleStandardJobScheduler::stringSplit(s_index, '-');
+
+                index_low = std::strtol(range_tokens.at(0).c_str(), nullptr, 10);
+                if (range_tokens.size() == 1) {
+                    index_high = std::strtol(range_tokens.at(0).c_str(), nullptr, 10);
+                } else if (range_tokens.size() == 2) {
+                    index_high = std::strtol(range_tokens.at(1).c_str(), nullptr, 10);
+                } else {
+                    throw std::invalid_argument("X Invalid algorithm list range item " + s_index);
                 }
-                scheduler->enableSchedulingAlgorithm(index);
-            } catch (std::invalid_argument &e) {
-                std::cerr << "Error: invalid algorithm list: "<< e.what() << "\n";
-                exit(1);
+                if (index_low > index_high) {
+                    throw std::invalid_argument("Y Invalid algorithm list range item " + s_index);
+                }
+                if (index_low >= scheduler->getNumAvailableSchedulingAlgorithms()) {
+                    throw std::invalid_argument("Z Invalid algorithm index " + s_index);
+                }
+                if (index_high >= scheduler->getNumAvailableSchedulingAlgorithms()) {
+                    throw std::invalid_argument("Q Invalid algorithm index " + s_index);
+                }
+                for (auto i = index_low; i <= index_high; i++) {
+                    scheduler->enableSchedulingAlgorithm(i);
+                }
             }
+        } catch (std::invalid_argument &e) {
+            std::cerr << "Error: invalid algorithm list: "<< e.what() << "\n";
+            exit(1);
         }
     }
 
@@ -210,7 +223,8 @@ int main(int argc, char **argv) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 0;
     }
-//    std::cerr << "Simulation done!" << std::endl;
+
+
     std::cout << workflow->getCompletionDate() << "\n";
 
     return 0;

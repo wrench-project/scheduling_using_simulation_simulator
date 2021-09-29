@@ -38,6 +38,8 @@ public:
     std::string getCoreSelectionSchemeDocumentation();
     void printAllSchemes();
 
+    static std::vector<std::string> stringSplit(const std::string str, char sep);
+
 private:
 
     void initTaskPrioritySchemes();

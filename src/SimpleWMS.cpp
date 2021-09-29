@@ -118,7 +118,7 @@ int SimpleWMS::main() {
             }
         }
 
-        if (this->work_done_since_last_scheduler_change > this->speculative_work_fraction * total_work) {
+        if ((this->i_am_speculative) and (this->work_done_since_last_scheduler_change > this->speculative_work_fraction * total_work)) {
             break;
         }
 

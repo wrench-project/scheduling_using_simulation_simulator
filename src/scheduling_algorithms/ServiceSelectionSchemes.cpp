@@ -28,15 +28,6 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         }
         return picked;
     };
-    this->service_selection_schemes["slowest_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getCoreFlopRate().begin()->second < picked->getCoreFlopRate().begin()->second)) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
     this->service_selection_schemes["most_idle_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         for (auto const &s : services) {
@@ -46,15 +37,7 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         }
         return picked;
     };
-    this->service_selection_schemes["least_idle_cores"] = [] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
-        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
-        for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getTotalNumIdleCores() < picked->getTotalNumIdleCores())) {
-                picked = s;
-            }
-        }
-        return picked;
-    };
+
     this->service_selection_schemes["most_local_data"] = [this] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         double max_data_bytes = 0;

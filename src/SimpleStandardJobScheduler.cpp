@@ -228,3 +228,14 @@ std::string SimpleStandardJobScheduler::schedulingAlgorithmToString(unsigned lon
     auto alg = this->scheduling_algorithms_index_to_tuple[index];
     return std::get<0>(alg) + ":" + std::get<1>(alg) + ":" + std::get<2>(alg);
 }
+
+
+std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::string str, char sep) {
+    stringstream ss(str);
+    std::vector<std::string> tokens;
+    string item;
+    while (getline(ss, item, sep)) {
+        tokens.push_back(item);
+    }
+    return tokens;
+}
