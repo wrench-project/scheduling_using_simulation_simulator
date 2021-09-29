@@ -19,17 +19,19 @@ public:
 
     void scheduleTasks(std::vector<wrench::WorkflowTask *> tasks);
 
-    void addSchedulingAlgorithm(std::string spec);
-
-    void setSchedulingAlgorithm(int scheduler_index) { this->current_scheduler = scheduler_index; }
-    int getNumSchedulingAlgorithms() { return this->scheduling_algorithms.size(); }
-
     void init(
             std::shared_ptr<wrench::JobManager> job_manager,
             std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
             std::set<std::shared_ptr<wrench::StorageService>> storage_services,
             std::shared_ptr<wrench::FileRegistryService> file_registry_service,
             std::string wms_host);
+
+    unsigned long getNumAvailableSchedulingAlgorithms() { return this->scheduling_algorithms_index_to_tuple.size(); }
+    void enableSchedulingAlgorithm(unsigned long index) { this->enabled_scheduling_algorithms.emplace_back(index); }
+    std::vector<unsigned long> getEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms; }
+    void useSchedulingAlgorithm(unsigned long scheduler_index) { this->current_scheduling_algorithm = scheduler_index; }
+    unsigned long getUsedSchedulingAlgorithm() { return this->current_scheduling_algorithm; }
+    std::string schedulingAlgorithmToString(unsigned long index);
 
     std::string getTaskPrioritySchemeDocumentation();
     std::string getServiceSelectionSchemeDocumentation();
@@ -45,16 +47,17 @@ private:
     void prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks);
     bool scheduleTask(wrench::WorkflowTask *task,
                       std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
-                      int *picked_num_cores);
+                      unsigned long *picked_num_cores);
 
     std::shared_ptr<wrench::FileLocation> pick_location(const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
                                                         wrench::WorkflowFile *file);
 
     bool taskCanRunOn(wrench::WorkflowTask *task, std::shared_ptr<wrench::BareMetalComputeService> service);
 
+    std::vector<unsigned long> enabled_scheduling_algorithms;
+    std::map<unsigned long, std::tuple<std::string, std::string, std::string>> scheduling_algorithms_index_to_tuple;
 
-    std::vector<std::tuple<std::string, std::string, std::string>> scheduling_algorithms;
-    int current_scheduler = 0;
+    unsigned long current_scheduling_algorithm = 0;
 
     std::map<std::string, std::function<bool(const wrench::WorkflowTask* a, const wrench::WorkflowTask* b)>> task_priority_schemes;
     std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> service_selection_schemes;

@@ -76,27 +76,24 @@ int SimpleWMS::main() {
     while (true) {
 
         // Scheduler change?
-        if (((not this->i_am_speculative) and (this->scheduler->getNumSchedulingAlgorithms() > 1)) and
+        if (((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1)) and
             (((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change > this->first_scheduler_change_trigger * total_work)) or
              (this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work)))) {
+
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
             std::cerr << "Exploring scheduling algorithm futures speculatively... ";
             std::cerr.flush();
-//            std::cerr << "SHOULD BE LOOKING AT RESCHEDULING!\n";
             std::vector<double> makespans;
-            for (int i=0; i < this->scheduler->getNumSchedulingAlgorithms(); i++) {
+            for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
                 pipe(pipefd);
-//                std::cerr << "STARTING A CHILD TO LOOK AT ALGORITHM " << i << "\n";
                 auto pid = fork();
                 if (!pid) {
-                    // Child
                     // Make the child mute
                     close(STDOUT_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
-//                    std::cerr << "   I AM A CHILD DOING ALGO " << i << "\n";
-                    this->scheduler->setSchedulingAlgorithm(i);
+                    this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
                     break;
                 } else {
@@ -105,17 +102,19 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     read(pipefd[0], &child_time, sizeof(double));
-//                    std::cerr << "CHILD THAT LOOKED AT ALGO " << i << " GAVE MAKESPAN: " << child_time << "\n";
                     makespans.push_back(child_time);
                     waitpid(pid, &stat_loc, 0);
-//                    std::cerr << "CHILD EXITED: " << WEXITSTATUS(stat_loc) << "\n";
-//                    break;
                 }
             }
             if (not this->i_am_speculative) {
-                int minElementIndex = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
-                std::cerr << "Switching to algorithm " << minElementIndex << "\n";
-                this->scheduler->setSchedulingAlgorithm(minElementIndex);
+                auto argmin = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
+                unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
+
+                std::cerr << "Switching to algorithm " <<
+                          "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
+                          this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
+
+                this->scheduler->useSchedulingAlgorithm(argmin);
             }
         }
 
@@ -125,14 +124,6 @@ int SimpleWMS::main() {
 
         // Get the ready tasks
         std::vector<wrench::WorkflowTask *> ready_tasks = this->getWorkflow()->getReadyTasks();
-
-        // Get the available compute services
-        auto compute_services = this->getAvailableComputeServices<wrench::ComputeService>();
-
-        if (compute_services.empty()) {
-            WRENCH_INFO("Aborting - No compute services available!");
-            break;
-        }
 
         // Run ready tasks with defined scheduler implementation
         this->scheduler->scheduleTasks(ready_tasks);

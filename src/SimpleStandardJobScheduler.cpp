@@ -20,6 +20,15 @@ SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
     this->initServiceSelectionSchemes();
     this->initCoreSelectionSchemes();
 
+    unsigned int index = 0;
+    for (auto const &e : this->task_priority_schemes) {
+        for (auto const &f : this->service_selection_schemes) {
+            for (auto const &g : this->core_selection_schemes) {
+                this->scheduling_algorithms_index_to_tuple[index] =  std::make_tuple(e.first, f.first, g.first);
+                index++;
+            }
+        }
+    }
 }
 
 
@@ -99,14 +108,14 @@ bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const 
 void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks) {
 
     std::sort(tasks.begin(), tasks.end(),
-              this->task_priority_schemes[std::get<0>(this->scheduling_algorithms.at(this->current_scheduler))]);
+              this->task_priority_schemes[std::get<0>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))]);
 
 }
 
 /** Returns true if found something **/
 bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
                                               std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
-                                              int *picked_num_cores) {
+                                              unsigned long *picked_num_cores) {
 
 
     // Weed out impossible services
@@ -123,8 +132,8 @@ bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
         return false;
     }
 
-    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms.at(this->current_scheduler))](task, possible_services);
-    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms.at(this->current_scheduler))](task, *picked_service);
+    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))](task, possible_services);
+    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))](task, *picked_service);
 
     return true;
 }
@@ -138,7 +147,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
 
         WRENCH_INFO("Scheduling ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;
-        int picked_num_cores;
+        unsigned long picked_num_cores;
 
         if (not scheduleTask(task, &picked_service, &picked_num_cores)) {
             WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
@@ -176,29 +185,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
 //    WRENCH_INFO("Done with scheduling tasks as standard jobs");
 }
 
-void SimpleStandardJobScheduler::addSchedulingAlgorithm(std::string spec) {
 
-    stringstream ss(spec);
-    std::vector<std::string> tokens;
-    string item;
-    while (getline(ss, item, ':')) {
-        tokens.push_back (item);
-    }
-    if (tokens.size() != 3) {
-        throw std::invalid_argument("Invalid scheduler specification '" + spec + "'");
-    }
-    if (this->task_priority_schemes.find(tokens.at(0)) == this->task_priority_schemes.end()) {
-        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown task priority scheme '" + tokens.at(0) + "'");
-    }
-    if (this->service_selection_schemes.find(tokens.at(1)) == this->service_selection_schemes.end()) {
-        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown service selection scheme '" + tokens.at(1) + "'");
-    }
-    if (this->core_selection_schemes.find(tokens.at(2)) == this->core_selection_schemes.end()) {
-        throw std::invalid_argument("Invalid scheduler specification '" + spec + "': unknown core selection scheme '" + tokens.at(2) + "'");
-    }
-    this->scheduling_algorithms.emplace_back(tokens.at(0), tokens.at(1), tokens.at(2));
-
-}
 
 std::string SimpleStandardJobScheduler::getTaskPrioritySchemeDocumentation() {
     std::string documentation;
@@ -230,11 +217,14 @@ std::string SimpleStandardJobScheduler::getCoreSelectionSchemeDocumentation() {
 
 void SimpleStandardJobScheduler::printAllSchemes() {
 
-    for (auto const &e : this->task_priority_schemes) {
-        for (auto const &f : this->service_selection_schemes) {
-            for (auto const &g : this->core_selection_schemes) {
-                std::cout << e.first << ":" << f.first << ":" << g.first << "\n";
-            }
-        }
+    for (auto const &e : this->scheduling_algorithms_index_to_tuple) {
+        unsigned int index = e.first;
+        std::cout << "[" << (index < 100 ? "0" : "") << (index < 10 ? "0" : "") << index << "] "
+                  << this->schedulingAlgorithmToString(index) << "\n";
     }
+}
+
+std::string SimpleStandardJobScheduler::schedulingAlgorithmToString(unsigned long index) {
+    auto alg = this->scheduling_algorithms_index_to_tuple[index];
+    return std::get<0>(alg) + ":" + std::get<1>(alg) + ":" + std::get<2>(alg);
 }

@@ -51,9 +51,11 @@ int main(int argc, char **argv) {
     scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
 
     std::string reference_flops;
+    std::string algorithm_list;
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
+
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -66,16 +68,16 @@ int main(int argc, char **argv) {
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\")\n")
             ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
              "Cluster specification. Example: \"cluster:100:8:200Gf:100MBps\"\n")
-            ("print_all_schedulers",
-             "Print all scheduler combinations")
-            ("scheduler", po::value<std::vector<std::string>>()->value_name("taskscheme:hostscheme:corescheme"),
-             scheduler_doc.c_str())
-            ("initial_scheduler", po::value<std::string>()->required()->value_name("taskscheme:hostscheme:corescheme"),
-             "Scheduling algorithm specification (see above)")
+            ("print_all_algorithms",
+             "Print all scheduling algorithms available\n")
+            ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
+             "First one in the list will be used initially\nExample: --algorithms 3,12,0,1\n"
+             "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
-             ("The scheduler algorithm may change for the first time once this fraction of the work has been performed (between 0.0 and 1, 0.0 meaning right away and 1.0 meaning \"never change\")"))
+             ("The algorithm may change for the first time once this fraction of the work has been performed "
+              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n"))
             ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0),
-             ("The scheduler algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")"))
+             ("The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\n"))
             ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0),
              ("The fraction of work that a speculative execution performs before reporting to the master process (between 0.0 and 1, 1 meaning \"until workflow completion\")"))
             ;
@@ -86,10 +88,10 @@ int main(int argc, char **argv) {
         po::store(po::parse_command_line(argc, argv, desc), vm);
         // Print help message and exit if needed
         if (vm.count("help")) {
-            cout << desc << "\n";
+            std::cerr << desc << "\n";
             exit(0);
         }
-        if (vm.count("print_all_schedulers")) {
+        if (vm.count("print_all_algorithms")) {
             scheduler->printAllSchemes();
             exit(0);
         }
@@ -110,19 +112,27 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-//    std::cerr << vm["initial_scheduler"].as<std::string>() << "\n ";
-    try {
-        scheduler->addSchedulingAlgorithm(vm["initial_scheduler"].as<std::string>());
+    // Add all specified scheduling algorithms in oder to the scheduler
+    {
+        stringstream ss(algorithm_list);
+        std::vector<std::string> tokens;
+        string item;
+        while (getline(ss, item, ',')) {
+            tokens.push_back(item);
+        }
 
-        if (vm.count("scheduler")) {
-            // Parsing of the other scheduler specs, if any
-            for (auto const &spec : vm["scheduler"].as<std::vector<std::string>>()) {
-                scheduler->addSchedulingAlgorithm(spec);
+        for (const auto &s_index : tokens) {
+            try {
+                unsigned int index = std::strtol(s_index.c_str(), nullptr, 10);
+                if (index >= scheduler->getNumAvailableSchedulingAlgorithms()) {
+                    throw std::invalid_argument("Invalid algorithm index " + s_index);
+                }
+                scheduler->enableSchedulingAlgorithm(index);
+            } catch (std::invalid_argument &e) {
+                std::cerr << "Error: invalid algorithm list: "<< e.what() << "\n";
+                exit(1);
             }
         }
-    } catch (std::invalid_argument &e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        exit(1);
     }
 
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
