@@ -85,8 +85,8 @@ int SimpleWMS::main() {
 
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
-            std::cerr << "Exploring scheduling algorithm futures speculatively... ";
-            std::cerr.flush();
+//            std::cerr << "Exploring scheduling algorithm futures speculatively... ";
+            //std::cerr.flush();
             std::vector<double> makespans;
             for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
                 pipe(pipefd);
@@ -113,9 +113,9 @@ int SimpleWMS::main() {
                 auto argmin = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
-                std::cerr << "Switching to algorithm " <<
-                          "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                          this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
+                //std::cerr << "Switching to algorithm " <<
+                          //"[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
+                          //this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
 
                 this->scheduler->useSchedulingAlgorithm(argmin);
             }

@@ -30,7 +30,7 @@ public:
     void enableSchedulingAlgorithm(unsigned long index) { this->enabled_scheduling_algorithms.emplace_back(index); }
     std::vector<unsigned long> getEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms; }
     void useSchedulingAlgorithm(unsigned long scheduler_index) { this->current_scheduling_algorithm = scheduler_index; }
-    unsigned long getUsedSchedulingAlgorithm() { return this->current_scheduling_algorithm; }
+    unsigned long getUsedSchedulingAlgorithm() const { return this->current_scheduling_algorithm; }
     std::string schedulingAlgorithmToString(unsigned long index);
 
     std::string getTaskPrioritySchemeDocumentation();
@@ -38,7 +38,7 @@ public:
     std::string getCoreSelectionSchemeDocumentation();
     void printAllSchemes();
 
-    static std::vector<std::string> stringSplit(const std::string str, char sep);
+    static std::vector<std::string> stringSplit(std::string str, char sep);
 
 private:
 

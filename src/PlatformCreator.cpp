@@ -94,7 +94,7 @@ void PlatformCreator::create_platform() const {
     // Create all the clusters
     for (auto const &cluster_spec : this->cluster_specs) {
         // Create all cluster hosts
-        std::pair<sg4::NetZone *, simgrid::kernel::routing::NetPoint *> cluster;
+//        std::pair<sg4::NetZone *, simgrid::kernel::routing::NetPoint *> cluster;
         zones.push_back(PlatformCreator::create_cluster(zone, cluster_spec));
     }
 
