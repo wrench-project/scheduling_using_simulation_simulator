@@ -95,7 +95,7 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
 bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
 
-
+#if 0
     auto idle_cores = service->getPerHostNumIdleCores();
     for (auto const &spec : idle_cores) {
         if (spec.second >= task->getMinNumCores()) {
@@ -103,6 +103,9 @@ bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const 
         }
     }
     return false;
+#else
+    return service->isThereAtLeastOneHostWithIdleResources(task->getMinNumCores(), 0.0);
+#endif
 }
 
 void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks) {

@@ -3,7 +3,7 @@ import subprocess
 import glob
 
 
-command_prefix = "../cmake-build-debug/simulator --cluster cluster1:16:8:50Gf:20MBps --cluster cluster2:16:4:100Gf:10MBps --cluster cluster3:16:6:80Gf:15MBps  --reference_flops 100Gf  --first_scheduler_change_trigger 0.00 --periodic_scheduler_change_trigger 0.1 --speculative_work_fraction 1.0"
+command_prefix = "../build/simulator --cluster cluster1:16:8:50Gf:20MBps --cluster cluster2:16:4:100Gf:10MBps --cluster cluster3:16:6:80Gf:15MBps  --reference_flops 100Gf  --first_scheduler_change_trigger 0.00 --periodic_scheduler_change_trigger 0.1 --speculative_work_fraction 1.0"
 
 algorithms=[str(x) for x in range(0,24)]
 workflows = glob.glob("../workflows/*.json")
