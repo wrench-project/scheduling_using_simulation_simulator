@@ -36,9 +36,9 @@ unsigned long pickNumCoresWithBoundedEfficiency(const wrench::WorkflowTask* task
 /************************************************/
 void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
 
-    this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
-        return (task->getMinNumCores());
-    };
+//    this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+//        return (task->getMinNumCores());
+//    };
 
     this->core_selection_schemes["as_many_as_possible"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
         auto idle_cores = service->getPerHostNumIdleCores();
