@@ -87,9 +87,9 @@ if __name__ == "__main__":
             # Run all trials in parallel
             #################################################
             if (noise > 0):
-                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-23 --simulation_noise " + str(noise)] * num_trials
+                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)+" --simulation_noise " + str(noise)] * num_trials
             else:
-                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-23 --simulation_noise " + str(noise)]
+                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)+" --simulation_noise " + str(noise)]
             makespans = run_parallel_simulations(commands_to_run, num_threads)
             print_to_file(output_file_name, "  ADAPTIVE (" + str(100*noise) + "% NOISE): " + str(sorted(makespans)))
 
