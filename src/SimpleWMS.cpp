@@ -79,14 +79,21 @@ int SimpleWMS::main() {
     while (true) {
 
         // Scheduler change?
-        if (((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1)) and
-            (((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change > this->first_scheduler_change_trigger * total_work)) or
-             (this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work)))) {
+
+        bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1));
+        bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
+        bool should_do_next_change = (this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work));
+
+//        std::cerr << "speculation can happen: " << speculation_can_happen << "\n";
+//        std::cerr << "should_do_first_change: " << should_do_first_change << "\n";
+//        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
+
+        if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
 
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
-            //std::cerr << "Exploring scheduling algorithm futures speculatively... ";
-            //std::cerr.flush();
+            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
+            std::cerr.flush();
             std::vector<double> makespans;
             for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
                 pipe(pipefd);
@@ -96,6 +103,7 @@ int SimpleWMS::main() {
                     close(STDOUT_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
+                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
                     this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
                     break;
@@ -113,11 +121,11 @@ int SimpleWMS::main() {
                 auto argmin = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
-                //std::cerr << "Switching to algorithm " <<
-                //          "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                //          this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
+                std::cerr << "Switching to algorithm " <<
+                          "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
+                          this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
 
-                this->scheduler->useSchedulingAlgorithm(argmin);
+                this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }
         }
 
@@ -155,7 +163,7 @@ int SimpleWMS::main() {
         // Send it back to the parent
         write(pipefd[1], &now, sizeof(double));
         close(pipefd[1]);
-        //std::cerr << "   CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
+        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
     }
     this->job_manager.reset();
 

@@ -24,11 +24,12 @@ if __name__ == "__main__":
     # Argument parsing
     ######################
     if (len(sys.argv) != 3):
-        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <outputfile>\n")
+        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <work fraction>\n")
         sys.exit(1)
 
     try:
         num_threads = int(sys.argv[1])
+        work_fraction = sys.argv[2]
     except:
         sys.stderr.write("Invalid argument\n")
         sys.exit(1)
@@ -45,13 +46,13 @@ if __name__ == "__main__":
 
     scheduler_change_trigger =          "--first_scheduler_change_trigger 0.00 "
     periodic_scheduler_change_trigger = "--periodic_scheduler_change_trigger 0.1 "
-    speculative_work_fraction =         "--speculative_work_fraction 1.0 "
+    speculative_work_fraction =         "--speculative_work_fraction " + work_fraction
 
     num_trials  = 10
 
     # Create output file
     ####################################
-    output_file_name = sys.argv[2]
+    output_file_name = "./results_" + work_fraction + ".txt"
     with open(output_file_name, "w") as f:
         f.write(platform + "\n")
         f.write("\n")
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     num_algorithms = int(subprocess.check_output(simulator + "--print_all_algorithms | wc -l", shell=True, encoding='utf-8'). strip())
 
     algorithms=[str(x) for x in range(0,num_algorithms)]
-    workflows = glob.glob("../workflows/*.json")
+    workflows = sorted(glob.glob("../workflows/*.json"))
     
     for workflow in workflows:
         print_to_file(output_file_name, "WORKFLOW: " + workflow)
