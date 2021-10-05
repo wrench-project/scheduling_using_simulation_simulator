@@ -4,10 +4,12 @@ import glob
 from multiprocessing import Pool
 import sys
 
+
 def print_to_file(file_name, message):
     with open(file_name, "a") as f:
         f.write(message + "\n")
     return
+
 
 def run_simulation(command):
     result = subprocess.check_output(command, shell=True)

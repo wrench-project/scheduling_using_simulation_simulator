@@ -92,7 +92,7 @@ int SimpleWMS::main() {
 
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
-            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
+//            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
             std::cerr.flush();
             std::vector<double> makespans;
             for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
@@ -103,7 +103,7 @@ int SimpleWMS::main() {
                     close(STDOUT_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
-                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
+//                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
                     this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
                     break;
@@ -163,7 +163,7 @@ int SimpleWMS::main() {
         // Send it back to the parent
         write(pipefd[1], &now, sizeof(double));
         close(pipefd[1]);
-        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
+//        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
     }
     this->job_manager.reset();
 
