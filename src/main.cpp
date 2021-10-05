@@ -14,6 +14,8 @@
 #include <memory>
 #include <boost/program_options.hpp>
 #include <random>
+#include <nlohmann/json.hpp>
+
 
 namespace po = boost::program_options;
 
@@ -117,6 +119,7 @@ int main(int argc, char **argv) {
     }
 
     // Add all specified scheduling algorithms in oder to the scheduler
+    std::vector<int> algorithm_index_list;
     {
         auto tokens = SimpleStandardJobScheduler::stringSplit(algorithm_list, ',');
 
@@ -146,6 +149,7 @@ int main(int argc, char **argv) {
                 }
                 for (auto i = index_low; i <= index_high; i++) {
                     scheduler->enableSchedulingAlgorithm(i);
+                    algorithm_index_list.push_back(i);
                     if (first) {
                         scheduler->useSchedulingAlgorithm(i);
                         first = false;
@@ -240,8 +244,36 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // Create DETERMINISTIC JSON output
+    nlohmann::json output_json;
+    // Clusters
+    auto tokens = SimpleStandardJobScheduler::stringSplit(cluster_specs, ',');
+    std::sort(tokens.begin(), tokens.end());
+    output_json["clusters"] = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
+                                              [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+    // Algorithms
+    std::sort(algorithm_index_list.begin(), algorithm_index_list.end());
+    std::vector<std::string> algorithm_index_string_list;
+    for (const auto &i : algorithm_index_list) { algorithm_index_string_list.push_back(std::to_string(i)); }
+    output_json["algorithms"] =  std::accumulate(algorithm_index_string_list.begin(), algorithm_index_string_list.end(), std::string(""),
+                                                 [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+    // Workflow
+    tokens = SimpleStandardJobScheduler::stringSplit(workflow_file, '/');
+    output_json["workflow"] = tokens.at(tokens.size()-1);
+    output_json["reference_flops"] = reference_flops;
 
-    std::cout << workflow->getCompletionDate() << "\n";
+    // Configs
+    output_json["first_scheduler_change_trigger"] = first_scheduler_change_trigger;
+    output_json["periodic_scheduler_change_trigger"] = periodic_scheduler_change_trigger;
+    output_json["speculative_work_fraction"] = speculative_work_fraction;
+    output_json["simulation_noise"] = simulation_noise;
+
+    // Output
+    output_json["makespan"] = workflow->getCompletionDate();
+
+    std::cout << output_json.dump() << std::endl;
+
+//    std::cerr << workflow->getCompletionDate() << "\n";
 
     return 0;
 }
