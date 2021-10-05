@@ -40,7 +40,11 @@ public:
 
     static std::vector<std::string> stringSplit(std::string str, char sep);
 
+    void computeBottomLevels(wrench::Workflow *workflow);
+
 private:
+
+    void computeTaskBottomLevel(wrench::WorkflowTask *task);
 
     void initTaskPrioritySchemes();
     void initServiceSelectionSchemes();
@@ -57,7 +61,8 @@ private:
     bool taskCanRunOn(wrench::WorkflowTask *task, std::shared_ptr<wrench::BareMetalComputeService> service);
 
     std::vector<unsigned long> enabled_scheduling_algorithms;
-    std::unordered_map<unsigned long, std::tuple<std::string, std::string, std::string>> scheduling_algorithms_index_to_tuple;
+    std::
+    map<unsigned long, std::tuple<std::string, std::string, std::string>> scheduling_algorithms_index_to_tuple;
 
     unsigned long current_scheduling_algorithm = 0;
 
@@ -73,6 +78,8 @@ private:
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::string wms_host;
+
+    std::map<wrench::WorkflowTask *, double> bottom_levels;
 
 };
 

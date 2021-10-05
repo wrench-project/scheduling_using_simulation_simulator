@@ -241,3 +241,27 @@ std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::stri
     }
     return tokens;
 }
+
+void SimpleStandardJobScheduler::computeBottomLevels(wrench::Workflow *workflow) {
+
+    for (auto const &t : workflow->getEntryTasks()) {
+        computeTaskBottomLevel(t);
+    }
+}
+
+void SimpleStandardJobScheduler::computeTaskBottomLevel(wrench::WorkflowTask *task) {
+
+    if (this->bottom_levels.find(task) != this->bottom_levels.end()) {
+        return;
+    }
+
+    double my_bl = task->getFlops();
+    double max = 0.0;
+    for (const auto &child : task->getChildren()) {
+        computeTaskBottomLevel(child);
+        double bl = this->bottom_levels[child];
+        max = (bl < max ? max : bl);
+    }
+    this->bottom_levels[task] = my_bl + max;
+//    std::cerr << task->getID() << ": " << this->bottom_levels[task] << "\n";
+}

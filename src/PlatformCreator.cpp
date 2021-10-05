@@ -21,15 +21,14 @@ PlatformCreator::create_wms(const sg4::NetZone* root, std::string name, std::str
 
 
 std::tuple<sg4::NetZone*, simgrid::kernel::routing::NetPoint*, sg4::Link *>
-PlatformCreator::create_cluster(const sg4::NetZone* root, std::string spec) {
+PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root, std::string spec) {
     {
 
         auto parsed_spec = PlatformCreator::parseClusterSpecification(spec);
-        std::string name = std::get<0>(parsed_spec);
-        int num_hosts = std::get<1>(parsed_spec);
-        int num_cores = std::get<2>(parsed_spec);
-        std::string flops = std::get<3>(parsed_spec);
-        std::string bandwidth = std::get<4>(parsed_spec);
+        int num_hosts = std::get<0>(parsed_spec);
+        int num_cores = std::get<1>(parsed_spec);
+        std::string flops = std::get<2>(parsed_spec);
+        std::string bandwidth = std::get<3>(parsed_spec);
 
         auto* cluster      = sg4::create_star_zone(name);
         cluster->set_parent(root);
@@ -91,11 +90,15 @@ void PlatformCreator::create_platform() const {
     // Create the WMS zone
     zones.push_back(create_wms(zone, "wms_host", "100MBps"));
 
+    // Split the cluster specs into individual specs
+    auto tokens = SimpleStandardJobScheduler::stringSplit(this->cluster_specs, ',');
+
     // Create all the clusters
-    for (auto const &cluster_spec : this->cluster_specs) {
+    int counter = 0;
+    for (auto const &cluster_spec : tokens) {
         // Create all cluster hosts
 //        std::pair<sg4::NetZone *, simgrid::kernel::routing::NetPoint *> cluster;
-        zones.push_back(PlatformCreator::create_cluster(zone, cluster_spec));
+        zones.push_back(PlatformCreator::create_cluster(std::string("cluster_") + std::to_string(counter++), zone, cluster_spec));
     }
 
     // Create all routes
@@ -142,22 +145,21 @@ void PlatformCreator::create_platform() const {
 
 
 
-std::tuple<std::string, int, int, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
+std::tuple<int, int, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
     auto tokens = SimpleStandardJobScheduler::stringSplit(spec, ':');
 
-    if (tokens.size() != 5) {
+    if (tokens.size() != 4) {
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }
-    auto name = tokens.at(0);
     int num_hosts;
     int num_cores;
     try {
-        num_hosts = std::stoi(tokens.at(1));
-        num_cores = std::stoi(tokens.at(2));
+        num_hosts = std::stoi(tokens.at(0));
+        num_cores = std::stoi(tokens.at(1));
     } catch (std::invalid_argument &e) {
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }
-    auto flops = tokens.at(3);
-    auto bandwidth = tokens.at(4);
-    return std::make_tuple(name, num_hosts, num_cores, flops, bandwidth);
+    auto flops = tokens.at(2);
+    auto bandwidth = tokens.at(3);
+    return std::make_tuple(num_hosts, num_cores, flops, bandwidth);
 }

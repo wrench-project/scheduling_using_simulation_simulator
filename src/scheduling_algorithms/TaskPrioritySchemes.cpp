@@ -29,6 +29,7 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
             return ((unsigned long) a < (unsigned long) b);
         }
     };
+
     this->task_priority_schemes["most_data"] = [](const wrench::WorkflowTask *a,
                                                    const wrench::WorkflowTask *b) -> bool {
         double a_bytes = 0.0, b_bytes = 0.0;
@@ -42,6 +43,21 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         if (a_bytes < b_bytes) {
             return true;
         } else if (a_bytes > b_bytes) {
+            return false;
+        } else {
+            return ((unsigned long) a < (unsigned long) b);
+        }
+    };
+
+    this->task_priority_schemes["highest_bottom_level"] = [this](const wrench::WorkflowTask *a,
+                                                  const wrench::WorkflowTask *b) -> bool {
+
+        double a_bl = this->bottom_levels[(wrench::WorkflowTask  *)a];
+        double b_bl = this->bottom_levels[(wrench::WorkflowTask  *)b];
+
+        if (a_bl < b_bl) {
+            return true;
+        } else if (a_bl > b_bl) {
             return false;
         } else {
             return ((unsigned long) a < (unsigned long) b);

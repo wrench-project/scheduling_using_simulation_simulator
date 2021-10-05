@@ -48,6 +48,7 @@ int main(int argc, char **argv) {
     scheduler_doc += "* Core selection schemes:\n";
     scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
 
+    std::string cluster_specs;
     std::string reference_flops;
     std::string algorithm_list;
     double first_scheduler_change_trigger;
@@ -65,8 +66,8 @@ int main(int argc, char **argv) {
              "Path to JSON workflow description file\n")
             ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
-            ("cluster", po::value<std::vector<std::string>>()->required()->value_name("name:#nodes:#cores:flops:bw"),
-             "Cluster specification. Example: \"cluster:100:8:120f:100MBps\"\n")
+            ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:bw,#nodes:#cores:flops:bw,..."),
+             "Cluster specifications. Example: \"100:8:120Gf:100MBps,10:4:200Gf:25MBps\"\n")
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
@@ -108,7 +109,7 @@ int main(int argc, char **argv) {
     // Creation of the platform
     std::string wms_host = "wms_host";
     try {
-        PlatformCreator platform_creator(wms_host, vm["cluster"].as<std::vector<std::string>>());
+        PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>());
         simulation.instantiatePlatform(platform_creator);
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
@@ -160,12 +161,14 @@ int main(int argc, char **argv) {
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
     std::set<std::shared_ptr<wrench::ComputeService>> compute_services;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
-    for (const auto &spec : vm["cluster"].as<std::vector<std::string>>()) {
+    auto specs = SimpleStandardJobScheduler::stringSplit(cluster_specs,',');
+    int counter = 0;
+    for (const auto &spec : specs) {
+        std::string name = "cluster_" + std::to_string(counter++);
         auto parsed_spec = PlatformCreator::parseClusterSpecification(spec);
-        std::string name = std::get<0>(parsed_spec);
-        int num_hosts = std::get<1>(parsed_spec);
-//        int num_cores = std::get<2>(parsed_spec);
-        std::string flops = std::get<3>(parsed_spec);
+        int num_hosts = std::get<0>(parsed_spec);
+//        int num_cores = std::get<1>(parsed_spec);
+        std::string flops = std::get<2>(parsed_spec);
 
         std::string head_node = name+"-head";
         std::vector<std::string> compute_nodes;
@@ -208,6 +211,9 @@ int main(int argc, char **argv) {
     // Parse the workflow
     auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
             workflow_file, reference_flops, false, 1, 32, true);
+
+    // Compute all task bottom levels, which is useful for some scheduling options
+    scheduler->computeBottomLevels(workflow);
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);
