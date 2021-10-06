@@ -9,20 +9,31 @@ from pymongo import MongoClient
 global collection
 
 def run_simulation(command_to_run):
+
     # Get the input JSON to check on whetehr we really need to run this
     json_output = subprocess.check_output(command_to_run + " --print_JSON", shell=True)
     config = json.loads(json_output)
-    print(config)
+    #print(config)
 
-    # Look up Mongo to see if results aren't already there, in wich care nevermind
+    # Setup Mongo
+    mongo_url = "mongodb://localhost"
+    db_name = "scheduling_with_simulation_results"
+    mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
+    mydb = mongo_client["scheduling_with_simulation"]
+    collection = mydb["results"]
+
+    # Look up Mongo to see if results aren't already there, in wich case nevermind
     if collection.find_one(config):
-        sys.stderr.write("result already there!")
+        sys.stderr.write("ALREADY RAN!\n")
         return
+    else:
+        sys.stderr.write("RUNNING: " + str(config) + "\n")
 
     # Run the simulator
-    #json_output = subprocess.check_output(command_to_run, shell=True)
-    json_output["makespan"] = 666.42
-    collection.insert_one(json_output)
+    json_output = subprocess.check_output(command_to_run, shell=True)
+    result = json.loads(json_output)
+    sys.stderr.write("ADDING: " + str(result))
+    collection.insert_one(result)
 
 
 if __name__ == "__main__":
@@ -42,20 +53,19 @@ if __name__ == "__main__":
     #
     # Setup Mongo
     ####################
-    mongo_url = "localhost"
-    db_name = "scheduling_with_simulation_results"
     try:
+        mongo_url = "mongodb://localhost"
         mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
         mongo_client.server_info()
-        db_names = mongo_client.list_database_names()
-        print(db_names)
+        #mydb = mongo_client["scheduling_with_simulation"]
+        #collection = mydb["results"]
+        #collection.drop()
+        #sys.exit(0)
     except:
         sys.stderr.write("Cannot connect to Mongo... aborting\n")
         sys.exit(1)
 
-    collection = mongo_client.scheduling_with_simulation.results
-
-    # Build list of commands
+        # Build list of commands
     ####################
     simulator = "../build/simulator"
     workflow_dir = "../workflows/"
