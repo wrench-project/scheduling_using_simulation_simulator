@@ -52,13 +52,19 @@ def generate_plot(workflow_name, output_file):
         plot_count += 1
         ax.plot([0] * len(single_algs), single_algs, "go")
         count = 1
-        fractions = sorted([x for x in adaptive_alg[noise]])
+        if noise in adaptive_alg:
+            fractions = sorted([x for x in adaptive_alg[noise]])
+        else:
+            fractions = []
         for fraction in fractions:
             makespans = adaptive_alg[noise][fraction]
             ax.plot([count] * len(makespans), makespans, "ro")
             count += 1
         ax.set_xticks(list(range(0, count)))
-        ax.set_xticklabels([""] + [str(x) for x in adaptive_alg[noise]], fontsize=6)
+        if noise in adaptive_alg:
+            ax.set_xticklabels([""] + [str(x) for x in adaptive_alg[noise]], fontsize=6)
+        else:
+            ax.set_xticklabels([""], fontsize=6)
 
     plt.savefig(output_file)
     return
