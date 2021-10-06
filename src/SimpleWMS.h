@@ -25,6 +25,7 @@ public:
               double periodic_scheduler_change_trigger,
               double speculative_work_fraction,
               double simulation_noise,
+              int noise_seed,
               const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
               const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
               const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -42,6 +43,7 @@ private:
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
     double simulation_noise;
+    int noise_seed;
 
     double work_done_since_last_scheduler_change = 0.0;
     bool one_schedule_change_has_happened = false;

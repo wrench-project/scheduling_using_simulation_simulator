@@ -1,101 +1,111 @@
-#!/opt/local/bin/python3.9
+#!/usr/bin/env python3
 import subprocess
 import glob
 from multiprocessing import Pool
 import sys
+import json
+from pymongo import MongoClient
+
+global collection
+
+def run_simulation(command_to_run):
+    # Get the input JSON to check on whetehr we really need to run this
+    json_output = subprocess.check_output(command_to_run + " --print_JSON", shell=True)
+    config = json.loads(json_output)
+    print(config)
+
+    # Look up Mongo to see if results aren't already there, in wich care nevermind
+    if collection.find_one(config):
+        sys.stderr.write("result already there!")
+        return
+
+    # Run the simulator
+    #json_output = subprocess.check_output(command_to_run, shell=True)
+    json_output["makespan"] = 666.42
+    collection.insert_one(json_output)
 
 
-def print_to_file(file_name, message):
-    with open(file_name, "a") as f:
-        f.write(message + "\n")
-    return
-
-
-def run_simulation(command):
-    result = subprocess.check_output(command, shell=True)
-    return float(result.strip())
-
-
-def run_parallel_simulations(command_list, num_threads):
-    with Pool(num_threads) as p:
-        return p.map(run_simulation, command_list)
-
-
-if __name__ == "__main__": 
+if __name__ == "__main__":
 
     # Argument parsing
     ######################
-    if (len(sys.argv) != 3):
-        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <work fraction>\n")
+    if (len(sys.argv) != 2):
+        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads>\n")
         sys.exit(1)
 
     try:
         num_threads = int(sys.argv[1])
-        work_fraction = sys.argv[2]
     except:
         sys.stderr.write("Invalid argument\n")
         sys.exit(1)
 
-    # Configuration
+    #
+    # Setup Mongo
     ####################
-    simulator = "../build/simulator "
+    mongo_url = "localhost"
+    db_name = "scheduling_with_simulation_results"
+    try:
+        mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
+        mongo_client.server_info()
+        db_names = mongo_client.list_database_names()
+        print(db_names)
+    except:
+        sys.stderr.write("Cannot connect to Mongo... aborting\n")
+        sys.exit(1)
 
-    platform = ""
-    platform += "--cluster cluster1:16:8:50Gf:20MBps "
-    platform += "--cluster cluster2:16:4:100Gf:10MBps "
-    platform += "--cluster cluster3:16:6:80Gf:15MBps "
+    collection = mongo_client.scheduling_with_simulation.results
+
+    # Build list of commands
+    ####################
+    simulator = "../build/simulator"
+    workflow_dir = "../workflows/"
+
+    platform = "--clusters 16:8:50Gf:20MBps,16:4:100Gf:10MBps,16:6:80Gf:15MBps "
     platform += "--reference_flops 100Gf "
 
-    scheduler_change_trigger =          "--first_scheduler_change_trigger 0.00 "
+    scheduler_change_trigger = "--first_scheduler_change_trigger 0.00 "
     periodic_scheduler_change_trigger = "--periodic_scheduler_change_trigger 0.1 "
-    speculative_work_fraction =         "--speculative_work_fraction " + work_fraction
 
-    num_trials  = 10
+    num_samples = 10
 
-    # Create output file
-    ####################################
-    output_file_name = "./results_" + work_fraction + ".txt"
-    with open(output_file_name, "w") as f:
-        f.write(platform + "\n")
-        f.write("\n")
-        f.write(scheduler_change_trigger + "\n")
-        f.write(periodic_scheduler_change_trigger + "\n")
-        f.write(speculative_work_fraction + "\n")
-        f.write("--------------------------------------------------\n")
+    num_algorithms = int(
+        subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
+    algorithms = [str(x) for x in range(0, num_algorithms)]
 
-    # Create command prefix
-    ####################################
-    
-    command_prefix = "../build/simulator " + platform + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
-    
-    # Get the number of algorithms
-    ####################################
-    num_algorithms = int(subprocess.check_output(simulator + "--print_all_algorithms | wc -l", shell=True, encoding='utf-8'). strip())
+    workflows = sorted(glob.glob(workflow_dir+"*.json"))
 
-    algorithms=[str(x) for x in range(0,num_algorithms)]
-    workflows = sorted(glob.glob("../workflows/*.json"))
-    
+    speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    noises = [0.0, 0.1, 0.2, 0.4, 0.8]
+
+    commands_to_run = []
+
+    # Standard algorithms
     for workflow in workflows:
-        print_to_file(output_file_name, "WORKFLOW: " + workflow)
+        for alg in algorithms:
+            command = "../build/simulator " + platform + "  --algorithms " + str(alg) + " --workflow " + workflow
+            commands_to_run.append(command)
 
-        # Run all algorithms on their own, in parallel
-        #################################################
-        commands_to_run = [(command_prefix + " --workflow " + workflow + " --algorithms " + alg) for alg in algorithms]
-        makespans = run_parallel_simulations(commands_to_run, num_threads)
-        print_to_file(output_file_name, "  SINGLE: " + str(sorted((val, idx) for (idx, val) in enumerate(makespans))))
+    # Speculative algorithms
+    for workflow in workflows:
+        for speculative_work_fraction in speculative_work_fractions:
+            speculative_work_fraction = "--speculative_work_fraction " + str(speculative_work_fraction)
+            for noise in noises:
+                if noise == 0.0:
+                    seeds = [1000]
+                else:
+                    seeds = range(1000, 1000 + num_samples)
+                for seed in seeds:
+                    command = "../build/simulator " + platform + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
+                    command += " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)
+                    command += " --simulation_noise " + str(noise) + " --noise_seed " + str(seed)
 
-        # Do the simulation thing
-        for noise in [0.0, 0.1, 0.2, 0.4, 0.8]:
-            makespans = []
-            # Run all trials in parallel
-            #################################################
-            if (noise > 0):
-                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)+" --simulation_noise " + str(noise)] * num_trials
-            else:
-                commands_to_run = [command_prefix + " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)+" --simulation_noise " + str(noise)]
-            makespans = run_parallel_simulations(commands_to_run, num_threads)
-            print_to_file(output_file_name, "  ADAPTIVE (" + str(100*noise) + "% NOISE): " + str(sorted(makespans)))
+                    commands_to_run.append(command)
 
+    # Run the commands
+    sys.stderr.write(str(len(commands_to_run)) + " commands to run\n")
+
+    with Pool(num_threads) as p:
+        p.map(run_simulation, commands_to_run)
 
 
 

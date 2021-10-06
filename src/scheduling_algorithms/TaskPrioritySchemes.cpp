@@ -20,7 +20,7 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler_task_priority_schemes, "Log catego
 void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
 
     this->task_priority_schemes["most_flops"] = [](const wrench::WorkflowTask *a,
-                                                      const wrench::WorkflowTask *b) -> bool {
+                                                   const wrench::WorkflowTask *b) -> bool {
         if (a->getFlops() < b->getFlops()) {
             return true;
         } else if (a->getFlops() > b->getFlops()) {
@@ -31,7 +31,7 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
     };
 
     this->task_priority_schemes["most_data"] = [](const wrench::WorkflowTask *a,
-                                                   const wrench::WorkflowTask *b) -> bool {
+                                                  const wrench::WorkflowTask *b) -> bool {
         double a_bytes = 0.0, b_bytes = 0.0;
         for (auto const &f : a->getInputFiles()) {
             a_bytes += f->getSize();
@@ -49,8 +49,9 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         }
     };
 
-    this->task_priority_schemes["highest_bottom_level"] = [this](const wrench::WorkflowTask *a,
-                                                  const wrench::WorkflowTask *b) -> bool {
+    this->task_priority_schemes["highest_bottom_level"] = [this](
+            const wrench::WorkflowTask *a,
+            const wrench::WorkflowTask *b) -> bool {
 
         double a_bl = this->bottom_levels[(wrench::WorkflowTask  *)a];
         double b_bl = this->bottom_levels[(wrench::WorkflowTask  *)b];

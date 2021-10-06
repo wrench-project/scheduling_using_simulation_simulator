@@ -23,6 +23,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      double periodic_scheduler_change_trigger,
                      double speculative_work_fraction,
                      double simulation_noise,
+                     int noise_seed,
                      const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
                      const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
                      const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
@@ -38,7 +39,8 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     first_scheduler_change_trigger(first_scheduler_change_trigger),
                                                     periodic_scheduler_change_trigger(periodic_scheduler_change_trigger),
                                                     speculative_work_fraction(speculative_work_fraction),
-                                                    simulation_noise(simulation_noise)
+                                                    simulation_noise(simulation_noise),
+                                                    noise_seed(noise_seed)
                                                     {
 }
 
@@ -46,6 +48,9 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
 * @brief main method of the SimpleWMS daemon
 */
 int SimpleWMS::main() {
+
+    std::uniform_real_distribution<double> random_dist(-simulation_noise, simulation_noise);
+    std::mt19937 rng(noise_seed);
 
     wrench::TerminalOutput::setThisProcessLoggingColor(wrench::TerminalOutput::COLOR_GREEN);
 
@@ -113,6 +118,7 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     read(pipefd[0], &child_time, sizeof(double));
+                    child_time = child_time + child_time * random_dist(rng);
                     makespans.push_back(child_time);
                     waitpid(pid, &stat_loc, 0);
                 }
@@ -156,10 +162,6 @@ int SimpleWMS::main() {
     if (this->i_am_speculative) {
         // Get current time
         double now = wrench::Simulation::getCurrentSimulatedDate();
-        // Add noise
-        std::uniform_real_distribution<double> random_dist(-simulation_noise, simulation_noise);
-        std::mt19937 rng(getpid());
-        now = now + now * random_dist(rng);
         // Send it back to the parent
         write(pipefd[1], &now, sizeof(double));
         close(pipefd[1]);

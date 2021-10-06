@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
     double simulation_noise;
+    int noise_seed;
 
 
     // Define command-line argument options
@@ -72,6 +73,8 @@ int main(int argc, char **argv) {
              "Cluster specifications. Example: \"100:8:120Gf:100MBps,10:4:200Gf:25MBps\"\n")
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
+            ("print_JSON",
+             "Print the JSON input configuration, without the actual simulation results\n")
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
              "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
@@ -86,6 +89,9 @@ int main(int argc, char **argv) {
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")")
+            ("noise_seed", po::value<int>(&noise_seed)->value_name("<noise seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
+             "The seed used for the RNG that generates simulation noise "
+             "(between 1 and 200000)")
             ;
 
     // Parse command-line arguments
@@ -105,16 +111,6 @@ int main(int argc, char **argv) {
         po::notify(vm);
     } catch (std::exception &e) {
         cerr << "Error: " << e.what() << "\n";
-        exit(1);
-    }
-
-    // Creation of the platform
-    std::string wms_host = "wms_host";
-    try {
-        PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>());
-        simulation.instantiatePlatform(platform_creator);
-    } catch (std::exception &e) {
-        std::cerr << e.what() << "\n";
         exit(1);
     }
 
@@ -162,6 +158,49 @@ int main(int argc, char **argv) {
         }
     }
 
+    // Create DETERMINISTIC JSON output
+    nlohmann::json output_json;
+    // Clusters
+    auto tokens = SimpleStandardJobScheduler::stringSplit(cluster_specs, ',');
+    std::sort(tokens.begin(), tokens.end());
+    output_json["clusters"] = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
+                                              [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+    // Algorithms
+    std::sort(algorithm_index_list.begin(), algorithm_index_list.end());
+    std::vector<std::string> algorithm_index_string_list;
+    for (const auto &i : algorithm_index_list) { algorithm_index_string_list.push_back(std::to_string(i)); }
+    output_json["algorithms"] =  std::accumulate(algorithm_index_string_list.begin(), algorithm_index_string_list.end(), std::string(""),
+                                                 [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+    // Workflow
+    tokens = SimpleStandardJobScheduler::stringSplit(workflow_file, '/');
+    output_json["workflow"] = tokens.at(tokens.size()-1);
+    output_json["reference_flops"] = reference_flops;
+
+    // Configs
+    output_json["first_scheduler_change_trigger"] = first_scheduler_change_trigger;
+    output_json["periodic_scheduler_change_trigger"] = periodic_scheduler_change_trigger;
+    output_json["speculative_work_fraction"] = speculative_work_fraction;
+    output_json["simulation_noise"] = simulation_noise;
+    output_json["noise_seed"] = noise_seed;
+
+
+    if (vm.count("print_JSON")) {
+        std::cout << output_json.dump() << std::endl;
+        exit(0);
+    }
+
+    // Creation of the platform
+    std::string wms_host = "wms_host";
+    try {
+        PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>());
+        simulation.instantiatePlatform(platform_creator);
+    } catch (std::exception &e) {
+        std::cerr << e.what() << "\n";
+        exit(1);
+    }
+
+
+
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
     std::set<std::shared_ptr<wrench::ComputeService>> compute_services;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
@@ -208,7 +247,7 @@ int main(int argc, char **argv) {
     auto wms = simulation.add(
             new SimpleWMS(scheduler,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise,
+                          simulation_noise, noise_seed,
                           compute_services, storage_services, file_registry_service, wms_host));
 
 
@@ -244,29 +283,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // Create DETERMINISTIC JSON output
-    nlohmann::json output_json;
-    // Clusters
-    auto tokens = SimpleStandardJobScheduler::stringSplit(cluster_specs, ',');
-    std::sort(tokens.begin(), tokens.end());
-    output_json["clusters"] = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
-                                              [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
-    // Algorithms
-    std::sort(algorithm_index_list.begin(), algorithm_index_list.end());
-    std::vector<std::string> algorithm_index_string_list;
-    for (const auto &i : algorithm_index_list) { algorithm_index_string_list.push_back(std::to_string(i)); }
-    output_json["algorithms"] =  std::accumulate(algorithm_index_string_list.begin(), algorithm_index_string_list.end(), std::string(""),
-                                                 [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
-    // Workflow
-    tokens = SimpleStandardJobScheduler::stringSplit(workflow_file, '/');
-    output_json["workflow"] = tokens.at(tokens.size()-1);
-    output_json["reference_flops"] = reference_flops;
 
-    // Configs
-    output_json["first_scheduler_change_trigger"] = first_scheduler_change_trigger;
-    output_json["periodic_scheduler_change_trigger"] = periodic_scheduler_change_trigger;
-    output_json["speculative_work_fraction"] = speculative_work_fraction;
-    output_json["simulation_noise"] = simulation_noise;
 
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
