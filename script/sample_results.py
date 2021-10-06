@@ -31,11 +31,8 @@ def run_simulation(command_to_run):
         sys.stderr.write("RUNNING: " + str(config) + "\n")
 
     # Run the simulator
-    # json_output = subprocess.check_output(command_to_run, shell=True)
-    # result = json.loads(json_output)
-    result = config
-    result["makespan"] = 1000.0 + random.random() * 10000.0
-    sys.stderr.write("ADDING: " + str(result))
+    json_output = subprocess.check_output(command_to_run, shell=True)
+    result = json.loads(json_output)
     collection.insert_one(result)
 
 
