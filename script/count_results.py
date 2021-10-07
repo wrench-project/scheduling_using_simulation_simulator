@@ -19,13 +19,16 @@ if __name__ == "__main__":
         sys.write("Cannot connect to MONGO\n")
         sys.exit(1)
 
+    total = 0
     workflows = set()
     cursor = collection.find({})
     for doc in cursor:
+        total += 1
         workflows.add(doc["workflow"])
+    sys.stdout.write("Total: " + str(total) + "\n")
 
     for workflow in sorted(workflows):
-        sys.stdout.write(workflow + ": ")
+        sys.stdout.write("  " + workflow + ": ")
         count = 0
         cursor = collection.find({})
         for doc in cursor:
