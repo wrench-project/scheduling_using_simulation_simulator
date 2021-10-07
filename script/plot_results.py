@@ -62,7 +62,7 @@ def generate_plot(workflow_name, output_file):
             count += 1
         ax.set_xticks(list(range(0, count)))
         if noise in adaptive_alg:
-            ax.set_xticklabels([""] + [str(x) for x in adaptive_alg[noise]], fontsize=6)
+            ax.set_xticklabels([""] + [str(x) for x in sorted(adaptive_alg[noise])], fontsize=6)
         else:
             ax.set_xticklabels([""], fontsize=6)
 
