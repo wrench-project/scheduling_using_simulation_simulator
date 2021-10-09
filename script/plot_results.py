@@ -39,6 +39,7 @@ def generate_plot(workflow_name, output_file):
 
     noises = sorted(noises)
 
+    # Plot stuff
     plot_count = 1
     for noise in noises:
         ax = plt.subplot(1,len(noises),plot_count)
@@ -65,6 +66,7 @@ def generate_plot(workflow_name, output_file):
             ax.set_xticklabels([""] + [str(x) for x in sorted(adaptive_alg[noise])], fontsize=6)
         else:
             ax.set_xticklabels([""], fontsize=6)
+                
 
     plt.savefig(output_file)
     return
