@@ -69,6 +69,7 @@ def generate_plot(workflow_name, output_file):
                 
 
     plt.savefig(output_file)
+    plt.close()
     return
 
 

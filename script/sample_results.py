@@ -25,10 +25,13 @@ def run_simulation(command_to_run):
 
     # Look up Mongo to see if results aren't already there, in wich case nevermind
     if collection.find_one(config):
-        sys.stderr.write("ALREADY RAN!\n")
+#        sys.stderr.write(".")
+        sys.stderr.flush()
         return
     else:
-        sys.stderr.write("RUNNING: " + str(config) + "\n")
+#        sys.stderr.write("RUNNING: " + str(config) + "\n")
+        sys.stderr.write(".")
+        sys.stderr.flush()
 
     # Run the simulator
     json_output = subprocess.check_output(command_to_run, shell=True)
@@ -87,6 +90,7 @@ if __name__ == "__main__":
     speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     noises = [0.0, 0.1, 0.2, 0.4, 0.8]
 
+    sys.stderr.write("Phase 1\n")
     commands_to_run = []
 
     # Standard algorithms
@@ -95,8 +99,15 @@ if __name__ == "__main__":
             command = "../build/simulator " + platform + "  --algorithms " + str(alg) + " --workflow " + workflow
             commands_to_run.append(command)
 
+    with Pool(num_threads) as p:
+        p.map(run_simulation, commands_to_run)
+
+    sys.stderr.write("Phase 2\n")
+
     # Speculative algorithms
     for workflow in workflows:
+        sys.stderr.write("  " + workflow + "\n")
+        commands_to_run = []
         for speculative_work_fraction in speculative_work_fractions:
             speculative_work_fraction = "--speculative_work_fraction " + str(speculative_work_fraction)
             for noise in noises:
@@ -110,12 +121,12 @@ if __name__ == "__main__":
                     command += " --simulation_noise " + str(noise) + " --noise_seed " + str(seed)
 
                     commands_to_run.append(command)
+        with Pool(num_threads) as p:
+            p.map(run_simulation, commands_to_run)
 
     # Run the commands
-    sys.stderr.write(str(len(commands_to_run)) + " commands to run\n")
+#    sys.stderr.write(str(len(commands_to_run)) + " commands to run\n")
 
-    with Pool(num_threads) as p:
-        p.map(run_simulation, commands_to_run)
 
 
 
