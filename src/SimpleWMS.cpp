@@ -127,6 +127,7 @@ int SimpleWMS::main() {
                 auto argmin = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
+                this->algorithm_sequence.push_back(algorithm_index);
                 std::cerr << "Switching to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
                           this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
@@ -168,6 +169,7 @@ int SimpleWMS::main() {
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
     }
     this->job_manager.reset();
+
 
     return 0;
 }

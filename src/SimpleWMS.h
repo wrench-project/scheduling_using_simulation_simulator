@@ -31,6 +31,8 @@ public:
               const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
               const std::string &hostname);
 
+    std::vector<unsigned long> getAlgorithmSequence() { return this->algorithm_sequence; }
+
 private:
 
 
@@ -52,6 +54,10 @@ private:
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;
     std::shared_ptr<wrench::FileRegistryService> file_registry_service;
+
+    std::vector<unsigned long> algorithm_sequence;
+
+
 };
 
 #endif //MY_SIMPLEWMS_H

@@ -287,6 +287,14 @@ int main(int argc, char **argv) {
 
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
+    std::string alg_sequence = "";
+    for (auto const &a : wms->getAlgorithmSequence()) {
+        alg_sequence += std::to_string(a) + ",";
+    }
+    if (not alg_sequence.empty()) {
+        alg_sequence.pop_back();
+    }
+    output_json["algorithm_sequence"] = alg_sequence;
 
     std::cout << output_json.dump() << std::endl;
 
