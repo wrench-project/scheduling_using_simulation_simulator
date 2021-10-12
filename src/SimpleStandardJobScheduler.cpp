@@ -21,14 +21,24 @@ SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
     this->initCoreSelectionSchemes();
 
     unsigned int index = 0;
+    // Create all combination algorithms
     for (auto const &e : this->task_priority_schemes) {
+        if (e.first == "random") continue;
         for (auto const &f : this->service_selection_schemes) {
+            if (f.first == "random") continue;
             for (auto const &g : this->core_selection_schemes) {
+            if (g.first == "random") continue;
                 this->scheduling_algorithms_index_to_tuple[index] =  std::make_tuple(e.first, f.first, g.first);
                 index++;
             }
         }
     }
+    // Add the random:random:random one
+    this->scheduling_algorithms_index_to_tuple[index] = std::make_tuple("random", "random", "random");
+
+    // Create the random dist / rng for the random:random:random
+    this->random_dist_for_random_algorithm = std::uniform_int_distribution<unsigned long>(0, 1000);
+    this->rng_for_random_algorithm.seed(43);
 }
 
 
@@ -102,6 +112,7 @@ bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const 
             return true;
         }
     }
+    std::cerr << service->getName() << " IS NOT OK\n";
     return false;
 #else
     return service->isThereAtLeastOneHostWithIdleResources(task->getMinNumCores(), 0.0);
@@ -147,7 +158,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
     int num_scheduled_tasks = 0;
     for (auto task : tasks) {
 
-        WRENCH_INFO("Scheduling ready task %s", task->getID().c_str());
+        WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;
         unsigned long picked_num_cores;
 

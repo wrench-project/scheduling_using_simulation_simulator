@@ -46,6 +46,9 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
         for (auto const &h : idle_cores) {
             max = std::max<unsigned long>(max, h.second);
         }
+        if (max < task->getMinNumCores()) {
+            throw std::runtime_error("Core selection scheme (AS MANY AS POSSIBLE): A potential compute service doesn't have enough cores - this shouldn't happen");
+        }
         return std::min<unsigned long>(max, task->getMaxNumCores());
     };
 
@@ -55,6 +58,19 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
 
     this->core_selection_schemes["parallel_efficiency_ninety_percent"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
         return pickNumCoresWithBoundedEfficiency(task, service, 0.9);
+    };
+
+    this->core_selection_schemes["random"] = [this] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+        auto idle_cores = service->getPerHostNumIdleCores();
+        unsigned long max = 0;
+        for (auto const &h : idle_cores) {
+            max = std::max<unsigned long>(max, h.second);
+        }
+        if (max < task->getMinNumCores()) {
+            throw std::runtime_error("Core selection scheme (RANDOM): A potential compute service doesn't have enough cores - this shouldn't happen");
+        }
+        max = std::min<unsigned long>(max, task->getMaxNumCores());
+        return 1 + this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % max;
     };
 
 }

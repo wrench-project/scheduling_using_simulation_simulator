@@ -56,4 +56,16 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         return picked;
     };
 
+    this->service_selection_schemes["random"] = [this] (const wrench::WorkflowTask* task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+        auto picked = this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % services.size();
+        for (auto const &s : services) {
+            if (picked == 0) {
+                return s;
+            } else {
+                picked--;
+            }
+        }
+        return *(services.begin()); // just in case
+    };
+
 }

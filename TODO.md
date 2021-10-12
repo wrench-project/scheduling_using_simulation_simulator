@@ -1,5 +1,5 @@
 
-  - [ ] New task selection scheme: most children
+  - [X] New task selection scheme: most children
   - [ ] Add a FULLY RANDOM algorithm
   - [ ] Add "sequence of algorithms" as output to the simulator
   - [ ] Add a JSON/csv to the repo with results

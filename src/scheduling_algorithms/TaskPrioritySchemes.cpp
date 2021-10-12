@@ -65,4 +65,28 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         }
     };
 
+    this->task_priority_schemes["most_children"] = [](
+            const wrench::WorkflowTask *a,
+            const wrench::WorkflowTask *b) -> bool {
+
+        double a_num_children = a->getNumberOfChildren();
+        double b_num_children = b->getNumberOfChildren();
+
+        if (a_num_children < b_num_children) {
+            return true;
+        } else if (a_num_children > b_num_children) {
+            return false;
+        } else {
+            return ((unsigned long) a < (unsigned long) b);
+        }
+    };
+
+    this->task_priority_schemes["random"] = [this](
+            const wrench::WorkflowTask *a,
+            const wrench::WorkflowTask *b) -> bool {
+
+        // This may cause problems due to being non-deterministic
+        return (this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % 2 == 1);
+    };
+
 }

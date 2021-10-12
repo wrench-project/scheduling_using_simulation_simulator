@@ -81,6 +81,9 @@ private:
 
     std::map<wrench::WorkflowTask *, double> bottom_levels;
 
+    std::uniform_int_distribution<unsigned long> random_dist_for_random_algorithm;
+    std::mt19937 rng_for_random_algorithm;
+
 };
 
 #endif //MY_SIMPLESCHEDULER_H
