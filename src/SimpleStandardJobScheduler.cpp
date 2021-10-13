@@ -38,7 +38,6 @@ SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
 
     // Create the random dist / rng for the random:random:random
     this->random_dist_for_random_algorithm = std::uniform_int_distribution<unsigned long>(0, 1000);
-    this->rng_for_random_algorithm.seed(43);
 }
 
 

@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
     double simulation_noise;
+    int random_algorithm_seed;
     int noise_seed;
 
 
@@ -78,6 +79,9 @@ int main(int argc, char **argv) {
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
              "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
+            ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
+             "The seed used for the RNG used by the random:random:random algorithm "
+             "(between 1 and 200000)")
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
              "The algorithm may change for the first time once this fraction of the work has been performed "
              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n")
@@ -113,6 +117,9 @@ int main(int argc, char **argv) {
         cerr << "Error: " << e.what() << "\n";
         exit(1);
     }
+
+    // Set the random:random:random algorithm's seed
+    scheduler->setRandomAlgorithmSeed(random_algorithm_seed);
 
     // Add all specified scheduling algorithms in oder to the scheduler
     std::vector<int> algorithm_index_list;

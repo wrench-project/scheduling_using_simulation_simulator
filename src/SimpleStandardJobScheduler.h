@@ -42,6 +42,8 @@ public:
 
     void computeBottomLevels(wrench::Workflow *workflow);
 
+    void setRandomAlgorithmSeed(int seed) { this->rng_for_random_algorithm.seed(seed);}
+
 private:
 
     void computeTaskBottomLevel(wrench::WorkflowTask *task);
