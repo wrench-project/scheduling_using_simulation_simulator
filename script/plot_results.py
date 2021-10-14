@@ -8,8 +8,10 @@ import json
 from pymongo import MongoClient
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
+import random
 
 global collection
+
 
 def generate_plot(workflow_name, output_file):
 
@@ -25,7 +27,7 @@ def generate_plot(workflow_name, output_file):
         # print(doc)
         noises.add(doc["simulation_noise"])
         if len(doc["algorithms"].split(",")) == 1:
-            single_algs.append(doc["makespan"])
+            single_algs.append([doc["algorithms"], doc["makespan"]])
         else:
             noise = doc["simulation_noise"]
             if noise not in adaptive_alg:
@@ -40,6 +42,21 @@ def generate_plot(workflow_name, output_file):
     noises = sorted(noises)
 
     # Plot stuff
+    random.seed(42)
+    colormap = []
+    for i in range(0,10):
+        color = [0,0,0]
+        while sum(color) <= 0:
+            color = [10, random.choice(range(256)), random.choice(range(256))]
+        colorstring = "#"
+        for c in color:
+            code = hex(c)[2:len(hex(c))]
+            if len(code) == 1:
+                code = "0" + code
+            colorstring += code
+        colormap.append(colorstring)
+    markermap = ["o", "v", "^", "<", ">"]
+
     plot_count = 1
     for noise in noises:
         ax = plt.subplot(1,len(noises),plot_count)
@@ -51,7 +68,9 @@ def generate_plot(workflow_name, output_file):
             pass
         ax.set_xlabel("speculative work fraction")
         plot_count += 1
-        ax.plot([0] * len(single_algs), single_algs, "go")
+        for [alg, ms] in single_algs:
+
+            ax.plot([0], [ms], markermap[int(alg) % len(markermap)], color=colormap[int(alg) % len(colormap)])
         count = 1
         if noise in adaptive_alg:
             fractions = sorted([x for x in adaptive_alg[noise]])
@@ -93,7 +112,7 @@ if __name__ == "__main__":
 
     # Getting all workflows
 
-    for workflow in workflows:
+    for workflow in sorted(workflows):
         workflow_name = workflow.split("/")[-1]
         generate_plot(workflow_name, workflow_name+".result.pdf")
 
