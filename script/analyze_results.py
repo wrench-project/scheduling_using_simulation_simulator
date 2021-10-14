@@ -59,6 +59,10 @@ if __name__ == "__main__":
     for workflow in workflows:
         cursor = collection.find({"workflow": workflow, "simulation_noise": 0.0})
         for doc in cursor:
+            if not "algorithm_sequence" in doc:
+                break
+            else:
+                print(doc["algorithm_sequence"])
             algs = doc["algorithm_sequence"].split(",")
             if len(algs) <= 1:
                 continue

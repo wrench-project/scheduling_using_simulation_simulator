@@ -34,6 +34,7 @@ def run_simulation(command_to_run):
         sys.stderr.flush()
 
     # Run the simulator
+    print(command_to_run)
     json_output = subprocess.check_output(command_to_run, shell=True)
     result = json.loads(json_output)
     collection.insert_one(result)
@@ -117,7 +118,8 @@ if __name__ == "__main__":
                     seeds = range(1000, 1000 + num_samples)
                 for seed in seeds:
                     command = "../build/simulator " + platform + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
-                    command += " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-1)
+                    # All algorithms BUT random
+                    command += " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-2)
                     command += " --simulation_noise " + str(noise) + " --noise_seed " + str(seed)
 
                     commands_to_run.append(command)
