@@ -2,9 +2,9 @@
   - [X] New task selection scheme: most children
   - [X] Add a FULLY RANDOM algorithm (and added a --random_algorithm_seed command-line argument for it)
      - **QUESTION:** We would need to run this algorithm many times, is it worth it?
+  - [X] Augment plotting to distinguish individual algorithms
   - [X] Add "sequence of algorithms" as output to the simulator
   - [ ] Add a JSON/csv to the repo with results
-  - [ ] Augment plotting to distinguish individual algorithms
   - [ ] Output statistics
     - How often is each "green" algorithm good?
     - What are the sequences of algorithms? 
