@@ -85,8 +85,8 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
             const wrench::WorkflowTask *a,
             const wrench::WorkflowTask *b) -> bool {
 
-        // This may cause problems due to being non-deterministic
-        return (this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % 2 == 1);
+        // This is not really random, but leads to deterministic sorting.
+        return ((17 * (unsigned long)a + 11 * (unsigned long)b) % 2) == 1;
     };
 
 }
