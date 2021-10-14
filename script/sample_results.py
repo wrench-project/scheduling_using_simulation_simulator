@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     num_algorithms = int(
         subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
-    algorithms = [str(x) for x in range(0, num_algorithms)]
+    algorithms = [str(x) for x in range(0, num_algorithms-1)]  # No Random
 
     workflows = sorted(glob.glob(workflow_dir+"*.json"))
 
