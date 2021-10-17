@@ -29,11 +29,15 @@ if __name__ == "__main__":
     # Getting sets of things
     workflows = set()
     algorithms = set()
+    speculative_work_fractions = set()
     cursor = collection.find({})
     for doc in cursor:
         workflows.add(doc["workflow"])
+        speculative_work_fractions.add(doc["speculative_work_fraction"])
         if len(doc["algorithms"].split(",")) == 1:
             algorithms.add(doc["algorithms"])
+    workflow = sorted(list(workflows))
+    speculative_work_fractions = sorted(list(speculative_work_fractions))
 
     # Single algorithm winners
     print("Number of individual algorithm wins")
@@ -69,7 +73,31 @@ if __name__ == "__main__":
         print("\tAlgorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
 
 
+    # NO NOISE RESULTS
+    for workflow in workflows:
+        print("WORKFLOW: " + workflow)
+        best_single_alg_makespan = -1.0
+        cursor = collection.find({"workflow":workflow})
+        for doc in cursor:
+            if len(doc["algorithms"].split(",")) == 1:
+                if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= doc["makespan"]):
+                    best_single_alg_makespan = doc["makespan"]
+        if best_single_alg_makespan < 0:
+            continue
 
+        for speculative_work_fraction in speculative_work_fractions: 
+            cursor = collection.find({"workflow":workflow, "simulation_noise":0.0, "speculative_work_fraction":speculative_work_fraction})
+            best_adaptive_alg_makespan = -1.0
+            for doc in cursor:
+                if len(doc["algorithms"].split(",")) > 1:
+                    if (best_adaptive_alg_makespan < 0) or (best_adaptive_alg_makespan >= doc["makespan"]):
+                        best_adaptive_alg_makespan = doc["makespan"]
+            if best_adaptive_alg_makespan < 0:
+                continue
+                        
+#            print("       " + str(best_single_alg_makespan) + " vs. " + str(best_adaptive_alg_makespan))
+            improvement = 100.0* (best_single_alg_makespan - best_adaptive_alg_makespan) / best_single_alg_makespan
+            print( "  SPEC " + str(speculative_work_fraction) + ": " + str("{:.2f}".format(improvement)) + "%")
 
 
 
