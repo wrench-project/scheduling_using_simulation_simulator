@@ -59,15 +59,17 @@ if __name__ == "__main__":
     for workflow in workflows:
         cursor = collection.find({"workflow": workflow, "simulation_noise": 0.0})
         for doc in cursor:
-            if not "algorithm_sequence" in doc:
-                break
-            algs = doc["algorithm_sequence"].split(",")
+            algs = list(set(doc["algorithm_sequence"].split(",")))
             if len(algs) <= 1:
                 continue
             for alg in algs:
                 num_occurrences[int(alg)][1] += 1
     num_occurrences = reversed(sorted(num_occurrences, key=lambda x: x[1]))
     for x in num_occurrences:
-        print("\tAlgorithm " + f'{x[0]:02d}' + ": " + str(x[1]) + " occurences")
+        print("\tAlgorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
+
+
+
+
 
 
