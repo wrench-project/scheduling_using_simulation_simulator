@@ -6,9 +6,9 @@
   - [X] Add "sequence of algorithms" as output to the simulator
   - [ ] Add a JSON/csv to the repo with results
   - [ ] Output statistics
-    - How often is each "green" algorithm good?
-    - What are the sequences of algorithms? 
-    - How often is each green algorithm used in a "good" sequence?
+    - [X] How often is each "green" algorithm good?
+    - [ ] What are the sequences of algorithms? 
+    - [X] How often is each green algorithm used in a "good" sequence?
     - etc.
   - [ ] Come up with platform scenarios
      - One homogeneous for sure

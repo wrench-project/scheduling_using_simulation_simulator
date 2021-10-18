@@ -80,7 +80,26 @@ if __name__ == "__main__":
         for x in num_occurrences:
             print("    Algorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
     
+        # Algorithm sequences
+        print("  Number of different algorithms in an adaptive sequence (noise = 0, fraction = *)")
+        num_different_algorithms_in_sequence = {}
+        for workflow in workflows:
+            cursor = collection.find({"clusters":clusters_spec, "workflow": workflow, "simulation_noise": 0.0})
+            for doc in cursor:
+                tokens = doc["algorithm_sequence"].split(",")
+                if len(tokens) == 1:
+                    continue
+                num_algs = len(list(set(tokens)))
+                if not num_algs in num_different_algorithms_in_sequence:
+                    num_different_algorithms_in_sequence[num_algs] = 1
+                else:
+                    num_different_algorithms_in_sequence[num_algs] += 1
+                
+        num_different_algorithms_in_sequence = reversed(sorted(num_different_algorithms_in_sequence, key=lambda x: x[1]))
+        for x in num_occurrences:
+            print("    " + x[1] + " " + x[0] +"-algorithm sequences")
     
+ 
         # NO NOISE RESULTS
         for workflow in workflows:
             print("  WORKFLOW: " + workflow)
