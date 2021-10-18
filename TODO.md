@@ -7,11 +7,11 @@
   - [ ] Add a JSON/csv to the repo with results
   - [ ] Output statistics
     - [X] How often is each "green" algorithm good?
-    - [ ] What are the sequences of algorithms? 
+    - [X] What are the sequences of algorithms? 
     - [X] How often is each green algorithm used in a "good" sequence?
     - etc.
   - [ ] Come up with platform scenarios
-     - One homogeneous for sure
+     - [X] One homogeneous for sure
      - Several heterogeneous?
   - [ ] Come up with workflow scenarios: 
      - All "standard" workflows with 1000 tasks
