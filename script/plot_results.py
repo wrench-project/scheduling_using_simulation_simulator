@@ -12,8 +12,7 @@ import random
 
 global collection
 
-
-def generate_plot(workflow_name, output_file):
+def generate_plot(clusters_spec, workflow_name, output_file):
 
     single_algs = []
     adaptive_alg = {}
@@ -22,7 +21,7 @@ def generate_plot(workflow_name, output_file):
 
     # Build data structure
     noises = set()
-    cursor = collection.find({"workflow":workflow_name})
+    cursor = collection.find({"clusters":clusters_spec, "workflow":workflow_name})
     for doc in cursor:
         # print(doc)
         noises.add(doc["simulation_noise"])
@@ -105,15 +104,24 @@ if __name__ == "__main__":
         sys.stderr.write("Cannot connect to MONGO\n")
         sys.exit(1)
 
+
+    #clusters = "16:4:100Gf:10MBps,16:6:80Gf:15MBps,16:8:50Gf:20MBps"
+    clusters = "32:8:100Gf:20MBps"
+
     workflows = set()
-    cursor = collection.find({})
+    clusters = set()
+    cursor = collection.find()
     for doc in cursor:
+        clusters.add(doc["clusters"])
         workflows.add(doc["workflow"])
 
-    # Getting all workflows
+    workflows = sorted(list(workflows))
+    clusters = sorted(list(clusters))
 
-    for workflow in sorted(workflows):
-        workflow_name = workflow.split("/")[-1]
-        generate_plot(workflow_name, workflow_name+".result.pdf")
+    # Generating plots for all clusters and workflows
+    for clusters_spec in clusters:
+        for workflow in workflows:
+            workflow_name = workflow.split("/")[-1]
+            generate_plot(clusters_spec, workflow_name, clusters_spec+"_"+workflow_name+".result.pdf")
 
 

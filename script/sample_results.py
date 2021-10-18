@@ -74,7 +74,8 @@ if __name__ == "__main__":
     simulator = "../build/simulator"
     workflow_dir = "../workflows/"
 
-    platform = "--clusters 16:8:50Gf:20MBps,16:4:100Gf:10MBps,16:6:80Gf:15MBps "
+    #platform = "--clusters 16:8:50Gf:20MBps,16:4:100Gf:10MBps,16:6:80Gf:15MBps "
+    platform = "--clusters 32:8:100Gf:20MBps "
     platform += "--reference_flops 100Gf "
 
     scheduler_change_trigger = "--first_scheduler_change_trigger 0.00 "

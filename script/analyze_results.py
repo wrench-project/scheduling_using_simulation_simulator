@@ -25,79 +25,87 @@ if __name__ == "__main__":
         sys.stderr.write("Cannot connect to MONGO\n")
         sys.exit(1)
 
-
-    # Getting sets of things
     workflows = set()
-    algorithms = set()
+    clusters = set()
     speculative_work_fractions = set()
-    cursor = collection.find({})
+    algorithms = set()
+    cursor = collection.find()
     for doc in cursor:
+        clusters.add(doc["clusters"])
         workflows.add(doc["workflow"])
         speculative_work_fractions.add(doc["speculative_work_fraction"])
         if len(doc["algorithms"].split(",")) == 1:
             algorithms.add(doc["algorithms"])
-    workflow = sorted(list(workflows))
+
+    workflows = sorted(list(workflows))
+    clusters = sorted(list(clusters))
     speculative_work_fractions = sorted(list(speculative_work_fractions))
+    algorithms = sorted(list(algorithms))
 
-    # Single algorithm winners
-    print("Number of individual algorithm wins")
-    num_wins = [[x, 0] for x in range(0, len(algorithms))]
-    for workflow in workflows:
-        cursor = collection.find({"workflow":workflow, "simulation_noise":0.0})
-        best_makespan = float('inf')
-        best_algorithm = -1
-        for doc in cursor:
-            if len(doc["algorithms"].split(",")) > 1:
-                continue
-            if doc["makespan"] < best_makespan:
-                best_makespan = doc["makespan"]
-                best_algorithm = int(doc["algorithms"])
-        num_wins[best_algorithm][1] += 1
-    num_wins = reversed(sorted(num_wins, key=lambda x: x[1]))
-    for x in num_wins:
-        print("\tAlgorithm " + f'{x[0]:02d}' + ": " + str(x[1]) + " wins")
+    for clusters_spec in clusters:
+        print("=============================================")
+        print("CLUSTERS: " + clusters_spec)
+        print("=============================================")
 
-    # Algorithm sequences
-    print("Number of times each algorithm appears in an adaptive sequence (noise = 0, fraction = *)")
-    num_occurrences = [[x, 0] for x in range(0, len(algorithms))]
-    for workflow in workflows:
-        cursor = collection.find({"workflow": workflow, "simulation_noise": 0.0})
-        for doc in cursor:
-            algs = list(set(doc["algorithm_sequence"].split(",")))
-            if len(algs) <= 1:
-                continue
-            for alg in algs:
-                num_occurrences[int(alg)][1] += 1
-    num_occurrences = reversed(sorted(num_occurrences, key=lambda x: x[1]))
-    for x in num_occurrences:
-        print("\tAlgorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
-
-
-    # NO NOISE RESULTS
-    for workflow in workflows:
-        print("WORKFLOW: " + workflow)
-        best_single_alg_makespan = -1.0
-        cursor = collection.find({"workflow":workflow})
-        for doc in cursor:
-            if len(doc["algorithms"].split(",")) == 1:
-                if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= doc["makespan"]):
-                    best_single_alg_makespan = doc["makespan"]
-        if best_single_alg_makespan < 0:
-            continue
-
-        for speculative_work_fraction in speculative_work_fractions: 
-            cursor = collection.find({"workflow":workflow, "simulation_noise":0.0, "speculative_work_fraction":speculative_work_fraction})
-            best_adaptive_alg_makespan = -1.0
+        # Single algorithm winners
+        print("  Number of individual algorithm wins")
+        num_wins = [[x, 0] for x in range(0, len(algorithms))]
+        for workflow in workflows:
+            cursor = collection.find({"clusters":clusters_spec, "workflow":workflow, "simulation_noise":0.0})
+            best_makespan = float('inf')
+            best_algorithm = -1
             for doc in cursor:
                 if len(doc["algorithms"].split(",")) > 1:
-                    if (best_adaptive_alg_makespan < 0) or (best_adaptive_alg_makespan >= doc["makespan"]):
-                        best_adaptive_alg_makespan = doc["makespan"]
-            if best_adaptive_alg_makespan < 0:
+                    continue
+                if doc["makespan"] < best_makespan:
+                    best_makespan = doc["makespan"]
+                    best_algorithm = int(doc["algorithms"])
+            num_wins[best_algorithm][1] += 1
+        num_wins = reversed(sorted(num_wins, key=lambda x: x[1]))
+        for x in num_wins:
+            print("    Algorithm " + f'{x[0]:02d}' + ": " + str(x[1]) + " wins")
+    
+        # Algorithm sequences
+        print("  Number of times each algorithm appears in an adaptive sequence (noise = 0, fraction = *)")
+        num_occurrences = [[x, 0] for x in range(0, len(algorithms))]
+        for workflow in workflows:
+            cursor = collection.find({"clusters":clusters_spec, "workflow": workflow, "simulation_noise": 0.0})
+            for doc in cursor:
+                algs = list(set(doc["algorithm_sequence"].split(",")))
+                if len(algs) <= 1:
+                    continue
+                for alg in algs:
+                    num_occurrences[int(alg)][1] += 1
+        num_occurrences = reversed(sorted(num_occurrences, key=lambda x: x[1]))
+        for x in num_occurrences:
+            print("    Algorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
+    
+    
+        # NO NOISE RESULTS
+        for workflow in workflows:
+            print("  WORKFLOW: " + workflow)
+            best_single_alg_makespan = -1.0
+            cursor = collection.find({"clusters":clusters_spec,"workflow":workflow})
+            for doc in cursor:
+                if len(doc["algorithms"].split(",")) == 1:
+                    if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= doc["makespan"]):
+                        best_single_alg_makespan = doc["makespan"]
+            if best_single_alg_makespan < 0:
                 continue
-                        
-#            print("       " + str(best_single_alg_makespan) + " vs. " + str(best_adaptive_alg_makespan))
-            improvement = 100.0* (best_single_alg_makespan - best_adaptive_alg_makespan) / best_single_alg_makespan
-            print( "  SPEC " + str(speculative_work_fraction) + ": " + str("{:.2f}".format(improvement)) + "%")
-
+    
+            for speculative_work_fraction in speculative_work_fractions: 
+                cursor = collection.find({"clusters":clusters_spec, "workflow":workflow, "simulation_noise":0.0, "speculative_work_fraction":speculative_work_fraction})
+                best_adaptive_alg_makespan = -1.0
+                for doc in cursor:
+                    if len(doc["algorithms"].split(",")) > 1:
+                        if (best_adaptive_alg_makespan < 0) or (best_adaptive_alg_makespan >= doc["makespan"]):
+                            best_adaptive_alg_makespan = doc["makespan"]
+                if best_adaptive_alg_makespan < 0:
+                    continue
+                            
+    #            print("       " + str(best_single_alg_makespan) + " vs. " + str(best_adaptive_alg_makespan))
+                improvement = 100.0* (best_single_alg_makespan - best_adaptive_alg_makespan) / best_single_alg_makespan
+                print( "    SPEC " + str(speculative_work_fraction) + ": " + str("{:.2f}".format(improvement)) + "%")
+    
 
 
