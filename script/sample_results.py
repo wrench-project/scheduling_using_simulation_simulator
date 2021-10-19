@@ -9,6 +9,42 @@ from pymongo import MongoClient
 
 global collection
 
+def select_workflows_to_use(workflow_dir):
+
+    workflows = []
+
+    min_sequential_duration_in_hours = 5  
+
+    run_time_map = {}
+    
+    json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
+    for json_file in json_files:
+        f = open(json_file,"r")
+        json_object = json.load(f)
+        num_tasks=len(json_object["workflow"]["jobs"])
+        run_time = 0.0
+        for job in json_object["workflow"]["jobs"]:
+            run_time += job["runtime"]
+        run_time = int(10 * run_time / 3600.0) / 10.0
+        map_key = json_file.split("/")[-1].split("-")[0]
+        if not map_key in run_time_map:
+            run_time_map[map_key] = [[json_file, num_tasks, run_time]]
+        else:
+            run_time_map[map_key].append([json_file, num_tasks, run_time])
+    
+    for map_key in run_time_map:
+        instances = sorted(run_time_map[map_key], key=lambda x: x[2])
+        marked = False
+        for i in range(0, len(instances)):
+            instance = instances[i]
+            if ((not marked) and instance[2] > min_sequential_duration_in_hours) or ((not marked) and i == len(instances) -1):
+                marked = True
+                sys.stderr.write(str(instance[2]) + " hours \t" + str(instance[1]) + " tasks \t" + instance[0] + "\n")
+                workflows.append(instance[0])
+
+    return workflows
+
+
 def run_simulation(command_to_run):
 
     # Get the input JSON to check on whetehr we really need to run this
@@ -32,6 +68,7 @@ def run_simulation(command_to_run):
 #        sys.stderr.write("RUNNING: " + str(config) + "\n")
         sys.stderr.write(".")
         sys.stderr.flush()
+        return
 
     # Run the simulator
     print(command_to_run)
@@ -44,12 +81,13 @@ if __name__ == "__main__":
 
     # Argument parsing
     ######################
-    if (len(sys.argv) != 2):
-        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads>\n")
+    if (len(sys.argv) != 3):
+        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <dir with checked out WfInstances repos>\n")
         sys.exit(1)
 
     try:
         num_threads = int(sys.argv[1])
+        workflow_dir = sys.argv[2]
     except:
         sys.stderr.write("Invalid argument\n")
         sys.exit(1)
@@ -69,10 +107,9 @@ if __name__ == "__main__":
         sys.stderr.write("Cannot connect to Mongo... aborting\n")
         sys.exit(1)
 
-        # Build list of commands
+    # Build list of commands
     ####################
     simulator = "../build/simulator"
-    workflow_dir = "../workflows/"
 
     #platform = "--clusters 16:8:50Gf:20MBps,16:4:100Gf:10MBps,16:6:80Gf:15MBps "
     platform = "--clusters 32:8:100Gf:20MBps "
@@ -87,7 +124,7 @@ if __name__ == "__main__":
         subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
     algorithms = [str(x) for x in range(0, num_algorithms-1)]  # No Random
 
-    workflows = sorted(glob.glob(workflow_dir+"*.json"))
+    workflows = select_workflows_to_use(workflow_dir)
 
     speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     noises = [0.0, 0.1, 0.2, 0.4, 0.8]
