@@ -40,7 +40,7 @@ def select_workflows_to_use(workflow_dir):
             if ((not marked) and instance[2] > min_sequential_duration_in_hours) or ((not marked) and i == len(instances) -1):
                 marked = True
                 sys.stderr.write(str(instance[2]) + " hours \t" + str(instance[1]) + " tasks \t" + instance[0] + "\n")
-                workflows.append(instance[0])
+                workflows.append(instance[0].split("/")[-1])
 
     return workflows
 
@@ -61,11 +61,6 @@ def run_simulation(command_to_run):
 
     # Look up Mongo to see if results aren't already there, in wich case nevermind
     if collection.find_one(config):
-#        sys.stderr.write(".")
-        sys.stderr.flush()
-        return
-    else:
-#        sys.stderr.write("RUNNING: " + str(config) + "\n")
         sys.stderr.write(".")
         sys.stderr.flush()
         return

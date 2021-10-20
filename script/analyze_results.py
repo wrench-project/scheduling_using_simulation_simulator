@@ -80,7 +80,7 @@ if __name__ == "__main__":
         for x in num_occurrences:
             print("    Algorithm " + f'{x[0]:02d}' + ": used at least once in " + str(x[1]) + " sequences")
     
-        # Algorithm sequences
+        # Algorithm sequence lengths
         print("  Number of different algorithms in an adaptive sequence (noise = 0, fraction = *)")
         num_different_algorithms_in_sequence = {}
         for workflow in workflows:
@@ -95,9 +95,8 @@ if __name__ == "__main__":
                 else:
                     num_different_algorithms_in_sequence[num_algs] += 1
                 
-        num_different_algorithms_in_sequence = reversed(sorted(num_different_algorithms_in_sequence, key=lambda x: x[1]))
-        for x in num_occurrences:
-            print("    " + x[1] + " " + x[0] +"-algorithm sequences")
+        for x in sorted(num_different_algorithms_in_sequence):
+            print("    " + str(num_different_algorithms_in_sequence[x]) + " " + str(x) +"-algorithm sequences")
     
  
         # NO NOISE RESULTS
