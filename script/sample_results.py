@@ -19,6 +19,9 @@ def select_workflows_to_use(workflow_dir):
     
     json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
     for json_file in json_files:
+        # Ignoring nextflow workflows
+        if "nextflow" in json_file:
+            continue
         f = open(json_file,"r")
         json_object = json.load(f)
         num_tasks=len(json_object["workflow"]["jobs"])
