@@ -121,6 +121,7 @@ int main(int argc, char **argv) {
     // Set the random:random:random algorithm's seed
     scheduler->setRandomAlgorithmSeed(random_algorithm_seed);
 
+
     // Add all specified scheduling algorithms in oder to the scheduler
     std::vector<int> algorithm_index_list;
     {
@@ -247,6 +248,8 @@ int main(int argc, char **argv) {
     auto wms_ss = simulation.add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
     storage_services.insert(wms_ss);
 
+
+
     // Create a file registry service
     auto file_registry_service = simulation.add(new wrench::FileRegistryService(wms_host));
 
@@ -259,11 +262,14 @@ int main(int argc, char **argv) {
 
 
     // Parse the workflow
+    std::cerr << "ASDASDA\n";
     auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
             workflow_file, reference_flops, false, 1, 32, true);
 
     // Compute all task bottom levels, which is useful for some scheduling options
+    std::cerr << "ASDASDA\n";
     scheduler->computeBottomLevels(workflow);
+    std::cerr << "ASDASDA\n";
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);

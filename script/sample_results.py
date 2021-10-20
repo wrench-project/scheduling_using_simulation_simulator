@@ -40,7 +40,7 @@ def select_workflows_to_use(workflow_dir):
             if ((not marked) and instance[2] > min_sequential_duration_in_hours) or ((not marked) and i == len(instances) -1):
                 marked = True
                 sys.stderr.write(str(instance[2]) + " hours \t" + str(instance[1]) + " tasks \t" + instance[0] + "\n")
-                workflows.append(instance[0].split("/")[-1])
+                workflows.append(instance[0])
 
     return workflows
 
