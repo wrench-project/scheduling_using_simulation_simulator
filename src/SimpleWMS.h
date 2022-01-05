@@ -18,15 +18,16 @@ class Simulation;
 /**
  *  @brief A simple WMS implementation
  */
-class SimpleWMS : public wrench::WMS {
+class SimpleWMS : public wrench::ExecutionController {
 public:
     SimpleWMS(SimpleStandardJobScheduler *scheduler,
+              std::shared_ptr<wrench::Workflow> workflow,
               double first_scheduler_change_trigger,
               double periodic_scheduler_change_trigger,
               double speculative_work_fraction,
               double simulation_noise,
               int noise_seed,
-              const std::set<std::shared_ptr<wrench::ComputeService>> &compute_services,
+              const std::set<std::shared_ptr<wrench::BareMetalComputeService>> &compute_services,
               const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
               const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
               const std::string &hostname);
@@ -40,6 +41,7 @@ private:
     void processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) override;
     void processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) override;
 
+    std::shared_ptr<wrench::Workflow> workflow;
     SimpleStandardJobScheduler *scheduler;
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
@@ -53,6 +55,10 @@ private:
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;
+
+
+    std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
+    std::set<std::shared_ptr<wrench::StorageService>> storage_services;
     std::shared_ptr<wrench::FileRegistryService> file_registry_service;
 
     std::vector<unsigned long> algorithm_sequence;

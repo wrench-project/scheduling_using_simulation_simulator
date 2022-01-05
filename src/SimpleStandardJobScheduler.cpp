@@ -67,7 +67,7 @@ void SimpleStandardJobScheduler::init(
 
 std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location(
         const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
-        wrench::WorkflowFile *file) {
+        std::shared_ptr<wrench::DataFile> file) {
 
     auto entries = this->file_registry_service->lookupEntry(file);
     if (entries.empty()) {
@@ -102,7 +102,7 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
 }
 
-bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
+bool SimpleStandardJobScheduler::taskCanRunOn(std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
 
 #if 0
     auto idle_cores = service->getPerHostNumIdleCores();
@@ -118,7 +118,7 @@ bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const 
 #endif
 }
 
-void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks) {
+void SimpleStandardJobScheduler::prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask> > &tasks) {
 
     std::sort(tasks.begin(), tasks.end(),
               this->task_priority_schemes[std::get<0>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))]);
@@ -126,7 +126,7 @@ void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTas
 }
 
 /** Returns true if found something **/
-bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
+bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTask> task,
                                               std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
                                               unsigned long *picked_num_cores) {
 
@@ -150,7 +150,7 @@ bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
     return true;
 }
 
-void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask *> tasks) {
+void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
     prioritizeTasks(tasks);
 
@@ -173,7 +173,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
         num_scheduled_tasks++;
 
         // Submitting the task as a simple job
-        std::map<wrench::WorkflowFile *, std::shared_ptr<wrench::FileLocation>> file_locations;
+        std::map<std::shared_ptr<wrench::DataFile> , std::shared_ptr<wrench::FileLocation>> file_locations;
 
         // Input files are read from the "best" location
         for (auto file : task->getInputFiles()) {
@@ -252,14 +252,14 @@ std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::stri
     return tokens;
 }
 
-void SimpleStandardJobScheduler::computeBottomLevels(wrench::Workflow *workflow) {
+void SimpleStandardJobScheduler::computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow) {
 
     for (auto const &t : workflow->getEntryTasks()) {
         computeTaskBottomLevel(t);
     }
 }
 
-void SimpleStandardJobScheduler::computeTaskBottomLevel(wrench::WorkflowTask *task) {
+void SimpleStandardJobScheduler::computeTaskBottomLevel(std::shared_ptr<wrench::WorkflowTask> task) {
 
     if (this->bottom_levels.find(task) != this->bottom_levels.end()) {
         return;
