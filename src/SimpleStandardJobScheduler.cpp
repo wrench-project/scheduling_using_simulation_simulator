@@ -150,12 +150,12 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
     return true;
 }
 
-void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
+void SimpleStandardJobScheduler::scheduleTasks(std::set<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
     prioritizeTasks(tasks);
 
     int num_scheduled_tasks = 0;
-    for (auto task : tasks) {
+    for (const auto &task : tasks) {
 
         WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;
@@ -176,7 +176,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         std::map<std::shared_ptr<wrench::DataFile> , std::shared_ptr<wrench::FileLocation>> file_locations;
 
         // Input files are read from the "best" location
-        for (auto file : task->getInputFiles()) {
+        for (const auto &file : task->getInputFiles()) {
             // Pick a location
             std::shared_ptr<wrench::FileLocation> picked_location = pick_location(picked_service, file);
             file_locations.insert(std::make_pair(file, picked_location));
@@ -185,7 +185,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         // Output file are all written locally
         std::shared_ptr<wrench::StorageService> target_ss = this->map_compute_to_storage[picked_service];
 
-        for (auto f : task->getOutputFiles()) {
+        for (const auto &f : task->getOutputFiles()) {
             file_locations.insert(std::make_pair(f, wrench::FileLocation::LOCATION(target_ss)));
         }
 

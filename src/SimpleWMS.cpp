@@ -138,7 +138,7 @@ int SimpleWMS::main() {
         }
 
         // Get the ready tasks
-        std::vector<std::shared_ptr<wrench::WorkflowTask>> ready_tasks = this->workflow->getReadyTasks();
+        auto ready_tasks = this->workflow->getReadyTasks();
 
         // Run ready tasks with defined scheduler implementation
         this->scheduler->scheduleTasks(ready_tasks);
