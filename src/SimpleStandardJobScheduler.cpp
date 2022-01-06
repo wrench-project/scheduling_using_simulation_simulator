@@ -150,18 +150,12 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
     return true;
 }
 
-void SimpleStandardJobScheduler::scheduleTasks(std::set<std::shared_ptr<wrench::WorkflowTask>> tasks) {
+void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
-    std::vector<std::shared_ptr<wrench::WorkflowTask>> sorted_tasks;
-    sorted_tasks.reserve(tasks.size());
-    for (auto const &task : tasks) {
-        sorted_tasks.emplace_back(task);
-    }
-
-    prioritizeTasks(sorted_tasks);
+    prioritizeTasks(tasks);
 
     int num_scheduled_tasks = 0;
-    for (const auto &task : sorted_tasks) {
+    for (const auto &task : tasks) {
 
         WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;

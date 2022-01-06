@@ -18,7 +18,7 @@ public:
 
     SimpleStandardJobScheduler();
 
-    void scheduleTasks(std::set<std::shared_ptr<wrench::WorkflowTask> > tasks);
+    void scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask> > tasks);
 
     void init(
             std::shared_ptr<wrench::JobManager> job_manager,
