@@ -306,7 +306,18 @@ int main(int argc, char **argv) {
     }
     output_json["algorithm_sequence"] = alg_sequence;
 
+    // Compute total energy
+    double energy = 0.0;
+    for (auto const &h : simulation.getHostnameList()) {
+        if (h == "wms_host") continue;
+
+        energy += simulation.getEnergyConsumed(h);
+    }
+    output_json["energy_consumed"] = energy;
+
+
     std::cout << output_json.dump() << std::endl;
+
 
 //    std::cerr << workflow->getCompletionDate() << "\n";
 

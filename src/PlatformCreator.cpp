@@ -48,6 +48,9 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
             /* create host */
             auto host = cluster->create_host(hostname, flops);
             host->set_core_count(num_cores);
+            host->set_pstate_speed({flops});
+            host->set_property("wattage_per_state", "10.00:100.00"); // TODO: TO CHANGE
+            host->set_property("wattage_off", "0.0");
 
             /* Create disks on the head host */
             if (i == -1) {
