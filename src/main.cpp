@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
              "Print the JSON input configuration, without the actual simulation results\n")
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
-             "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
+             "(use --print_all_algorithms to see the list of algorithms)\n")
             ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
              "The seed used for the RNG used by the random:random:random algorithm "
              "(between 1 and 200000)")
@@ -287,8 +287,6 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-
-
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
     std::string alg_sequence = "";
@@ -299,6 +297,16 @@ int main(int argc, char **argv) {
         alg_sequence.pop_back();
     }
     output_json["algorithm_sequence"] = alg_sequence;
+
+    // Compute total energy
+    double energy = 0.0;
+    for (auto const &h : simulation->getHostnameList()) {
+        if (h == "wms_host") continue;
+
+        energy += simulation->getEnergyConsumed(h);
+    }
+    output_json["energy_consumed"] = energy;
+
 
     std::cout << output_json.dump() << std::endl;
 

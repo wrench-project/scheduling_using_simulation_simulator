@@ -131,9 +131,11 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
                                               unsigned long *picked_num_cores) {
 
 
+    std::cerr << " IN SCHEDULE TASK\n";
     // Weed out impossible services
     std::set<std::shared_ptr<wrench::BareMetalComputeService>>  possible_services;
     for (auto const &s : this->compute_services) {
+        std::cerr << "LOOKING AT SERVICE " << s->getName() << "\n";
         if (this->taskCanRunOn(task, s)) {
             possible_services.insert(s);
         }
@@ -143,6 +145,11 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
         *picked_service = nullptr;
         *picked_num_cores = 0;
         return false;
+    }
+
+    std::cerr << "I HAVE SELECTED " << possible_services.size() << " SERVICES THAT COULD WORK\n";
+    for (auto const &h : possible_services) {
+        std::cerr << "  - " << h->getName() << "\n";
     }
 
     *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, possible_services);
@@ -166,9 +173,10 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
             continue;
         }
 
-        WRENCH_INFO("Submitting task %s for execution on service at cluster %s",
+        WRENCH_INFO("Submitting task %s for execution on service at cluster %s with %lu cores",
                     task->getID().c_str(),
-                    picked_service->getHostname().c_str());
+                    picked_service->getHostname().c_str(),
+                    picked_num_cores);
 
         num_scheduled_tasks++;
 

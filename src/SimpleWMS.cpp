@@ -172,6 +172,7 @@ int SimpleWMS::main() {
 }
 
 void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) {
+    std::cerr << "JOB COMPLETED!\n";
     auto task = event->standard_job->getTasks().at(0);
     this->work_done_since_last_scheduler_change += task->getFlops();
     auto created_files = task->getOutputFiles();

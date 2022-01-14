@@ -46,6 +46,7 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
         for (auto const &h : idle_cores) {
             max = std::max<unsigned long>(max, h.second);
         }
+        std::cerr << "---> " << service->getName() << ": " << max << "\n";
         if (max < task->getMinNumCores()) {
             throw std::runtime_error("Core selection scheme (AS MANY AS POSSIBLE): A potential compute service doesn't have enough cores - this shouldn't happen");
         }
