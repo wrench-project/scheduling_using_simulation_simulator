@@ -11,10 +11,9 @@ global collection
 
 def run_simulation(command_to_run):
 
-    # Get the input JSON to check on whetehr we really need to run this
+    # Get the input JSON to check on whether we really need to run this
     json_output = subprocess.check_output(command_to_run + " --print_JSON", shell=True)
     config = json.loads(json_output)
-    #print(config)
 
     # Setup Mongo
     mongo_url = "mongodb://localhost"
@@ -100,12 +99,15 @@ if __name__ == "__main__":
 
     workflow_json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
 
+    #speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    #noises = [0.0, 0.1, 0.2, 0.4, 0.8]
     noises = [0.0, 0.1, 0.2, 0.4, 0.8]
 
     sys.stderr.write("Phase 1\n")
     commands_to_run = []
 
+    # Look over all platforms
     for platform_config_index in platform_configs:
 
         platform = platform_configurations[platform_config_index]
