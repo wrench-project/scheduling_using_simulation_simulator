@@ -124,7 +124,7 @@ if __name__ == "__main__":
         sys.stderr.write("Phase 2\n")
     
         # Speculative algorithms
-        for workflow in workflows:
+        for workflow in workflow_json_files:
             sys.stderr.write("  " + workflow + "\n")
             commands_to_run = []
             for speculative_work_fraction in speculative_work_fractions:
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                     else:
                         seeds = range(1000, 1000 + num_samples)
                     for seed in seeds:
-                        command = "../build/simulator " + platform + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
+                        command = "../build/simulator " + platform + reference_flop + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
                         # All algorithms BUT random
                         command += " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-2)
                         command += " --simulation_noise " + str(noise) + " --noise_seed " + str(seed)
