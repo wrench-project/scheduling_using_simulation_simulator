@@ -30,7 +30,10 @@ def run_simulation(command_to_run):
 
     # Run the simulator
     print(command_to_run)
-    json_output = subprocess.check_output(command_to_run, shell=True)
+    try:
+        json_output = subprocess.check_output(command_to_run, shell=True)
+    except CalledProcessError:
+        return
     result = json.loads(json_output)
     collection.insert_one(result)
 
