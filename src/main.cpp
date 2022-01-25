@@ -247,7 +247,6 @@ int main(int argc, char **argv) {
     storage_services.insert(wms_ss);
 
 
-
     // Create a file registry service
     auto file_registry_service = simulation->add(new wrench::FileRegistryService(wms_host));
 
@@ -309,6 +308,7 @@ int main(int argc, char **argv) {
 
 
     std::cout << output_json.dump() << std::endl;
+
 
 //    std::cerr << workflow->getCompletionDate() << "\n";
 
