@@ -45,6 +45,8 @@ public:
 
     void setRandomAlgorithmSeed(int seed) { this->rng_for_random_algorithm.seed(seed);}
 
+    std::unordered_map<std::shared_ptr<wrench::BareMetalComputeService>, std::map<std::string, unsigned long>> idle_cores_map;
+
 private:
 
     void computeTaskBottomLevel(std::shared_ptr<wrench::WorkflowTask> task);
@@ -56,7 +58,9 @@ private:
     void prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> &tasks);
     bool scheduleTask(std::shared_ptr<wrench::WorkflowTask> task,
                       std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
+                      std::string &picked_host,
                       unsigned long *picked_num_cores);
+
 
     std::shared_ptr<wrench::FileLocation> pick_location(const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
                                                         std::shared_ptr<wrench::DataFile> file);

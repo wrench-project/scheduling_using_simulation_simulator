@@ -172,8 +172,8 @@ int SimpleWMS::main() {
 }
 
 void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) {
-    std::cerr << "JOB COMPLETED!\n";
     auto task = event->standard_job->getTasks().at(0);
+//    std::cerr << "JOB COMPLETED: task " << task->getID() << " (" << task->getExecutionHost() << ", " << task->getNumCoresAllocated() << ")\n";
     this->work_done_since_last_scheduler_change += task->getFlops();
     auto created_files = task->getOutputFiles();
     auto cs = event->compute_service;
@@ -187,8 +187,11 @@ void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::Standa
     for (auto const &f : created_files) {
         this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
     }
+
+//    std::cerr << "UPDATING CORES[" << event->compute_service->getHostname() << "][" << task->getExecutionHost() << "] += " << task->getNumCoresAllocated() << "\n";
+    this->scheduler->idle_cores_map[std::dynamic_pointer_cast<wrench::BareMetalComputeService>(event->compute_service)][task->getExecutionHost()] += task->getNumCoresAllocated();
 }
 
 void SimpleWMS::processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) {
-    throw std::runtime_error("Job Failure shouldn't happen!");
+    throw std::runtime_error("Job Failure shouldn't happen: " + event->toString());
 }

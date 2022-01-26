@@ -28,11 +28,23 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         }
         return picked;
     };
-    this->service_selection_schemes["most_idle_cores"] = [] (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->service_selection_schemes["most_idle_cores"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         for (auto const &s : services) {
-            if ((picked == nullptr) or (s->getTotalNumIdleCores() > picked->getTotalNumIdleCores())) {
+            if (picked == nullptr) {
                 picked = s;
+            } else {
+                unsigned long s_total_cores = 0;
+                unsigned long picked_total_cores = 0;
+                for (auto const &entry : this->idle_cores_map[s]) {
+                    s_total_cores += entry.second;
+                }
+                for (auto const &entry : this->idle_cores_map[picked]) {
+                    picked_total_cores += entry.second;
+                }
+                if (s_total_cores > picked_total_cores) {
+                    picked = s;
+                }
             }
         }
         return picked;
