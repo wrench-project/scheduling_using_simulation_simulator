@@ -81,7 +81,7 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         }
     };
 
-    this->task_priority_schemes["random"] = [this](
+    this->task_priority_schemes["random"] = [](
             const std::shared_ptr<wrench::WorkflowTask> a,
             const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
 

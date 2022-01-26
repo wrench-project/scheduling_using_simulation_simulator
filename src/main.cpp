@@ -277,6 +277,8 @@ int main(int argc, char **argv) {
         simulation->stageFile(f, wms_ss);
     }
 
+    simulation->getOutput().enableFileReadWriteCopyTimestamps(false);
+    simulation->getOutput().enableWorkflowTaskTimestamps(false);
     // Launch the simulation
 //    std::cerr << "Launching the Simulation..." << std::endl;
     try {
