@@ -1,0 +1,10 @@
+1. Start mongod. For instance:
+
+    mkdir /tmp/db
+    mongod --dbpath=/tmp/db
+
+2. unzip db-oac.zip
+
+3. mongorestore db-oac
+
+
