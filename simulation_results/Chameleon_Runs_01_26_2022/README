@@ -1,10 +1,41 @@
-1. Start mongod. For instance:
+* Getting the data into MongoDB
 
-    mkdir /tmp/db
-    mongod --dbpath=/tmp/db
+    1. Start mongod. For instance:
 
-2. unzip db-oac.zip
+        mkdir /tmp/db
+        mongod --dbpath=/tmp/db
+    
+    2. unzip db-oac.zip
+    
+    3. mongorestore db-oac
 
-3. mongorestore db-oac
+* Database "schema"
+
+    {
+	"_id" : ObjectId("61e3912382cf3b1070d20c25"),
+	"algorithm_sequence" : "30,30,12,32",
+	"algorithms" : "30,12,32",
+	"clusters" : "96:8:100Gf:100MBps",
+	"energy_consumed" : 551614.138880521,
+	"first_scheduler_change_trigger" : 1,
+	"makespan" : 331.87114257187704,
+	"noise_seed" : 42,
+	"periodic_scheduler_change_trigger" : 0.1,
+	"reference_flops" : "100Gf",
+	"simulation_noise" : 0,
+	"speculative_work_fraction" : 1,
+	"workflow" : "epigenomics-chameleon-ilmn-4seq-50k-001.json"
+    }
+
+* How to do by-hand exploting in the mongo shell
+
+show dbs
+use scheduling_with_simulation
+show collections
+db.results.findOne({})
+db.results.findOne({"speculative_work_fraction":"0.2"})
+db.results.find({"algorithms":"13"}).count()
+
+* See the scripts in ../../scripts for how to process results in Python
 
 

@@ -17,7 +17,6 @@ if __name__ == "__main__":
     # Setup Mongo
     try:
         mongo_url = "mongodb://localhost"
-        db_name = "scheduling_with_simulation_results"
         mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
         mydb = mongo_client["scheduling_with_simulation"]
         collection = mydb["results"]
