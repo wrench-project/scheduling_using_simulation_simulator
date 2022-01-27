@@ -244,13 +244,23 @@ int main(int argc, char **argv) {
                         {})));
     }
 
+    // Set all time-outs to DBLMAX
+    for (auto const &cs: compute_services) {
+        cs->setNetworkTimeoutValue(DBL_MAX);
+    }
+    for (auto const &ss: storage_services) {
+        ss->setNetworkTimeoutValue(DBL_MAX);
+    }
+
     // Create a Storage Service on the WMS host
     auto wms_ss = simulation.add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
     storage_services.insert(wms_ss);
+    wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
 
     // Create a file registry service
     auto file_registry_service = simulation.add(new wrench::FileRegistryService(wms_host));
+    file_registry_service->setNetworkTimeoutValue(DBL_MAX);
 
     // Create the WMS
     auto wms = simulation.add(
@@ -258,6 +268,7 @@ int main(int argc, char **argv) {
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
                           simulation_noise, noise_seed,
                           compute_services, storage_services, file_registry_service, wms_host));
+    wms->setNetworkTimeoutValue(DBL_MAX);
 
 
     // Parse the workflow
