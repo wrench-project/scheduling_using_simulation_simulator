@@ -108,7 +108,7 @@ int SimpleWMS::main() {
                     close(STDOUT_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
-                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
+//                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
                     this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
                     break;
@@ -118,7 +118,7 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     read(pipefd[0], &child_time, sizeof(double));
-                    std::cerr << "Child told me: " << child_time << "\n";
+//                    std::cerr << "Child told me: " << child_time << "\n";
                     child_time = child_time + child_time * random_dist(rng);
                     makespans.push_back(child_time);
                     waitpid(pid, &stat_loc, 0);
