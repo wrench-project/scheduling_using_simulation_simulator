@@ -84,7 +84,7 @@ if __name__ == "__main__":
     simulation_noise = 0.0
 
     ### COMPUTING RESULTS
-    if not file_exists:
+    if False:
         results = {}
         for speculative_work_fraction in speculative_work_fractions:
             sys.stderr.write("Processing speculative_work_fraction " + str(speculative_work_fraction) + "\n")
@@ -93,6 +93,7 @@ if __name__ == "__main__":
                 sys.stderr.write("  Processing workflow " + str(workflow) + " ")
                 sys.stderr.flush()
                 results[speculative_work_fraction][workflow] = []
+                worst_relative_improvement = 0;
                 for baseline_algo in algorithms:
                     sys.stderr.write(".")
                     sys.stderr.flush()
@@ -104,7 +105,9 @@ if __name__ == "__main__":
                             elif doc["algorithms"] == baseline_algo:
                                 baseline_makespan = doc["makespan"]
                         relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
+                        worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
                         results[speculative_work_fraction][workflow].append(relative_improvement)
+                #print("WORST: " + str(worst_relative_improvement))
                 sys.stderr.write("\n")
         print(results)
     else:
