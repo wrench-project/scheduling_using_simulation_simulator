@@ -52,7 +52,7 @@ if __name__ == "__main__":
             "--clusters 32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps"
                ]
 
-    workflow_dir = "../wfinstances/"
+    workflow_dir = "../../wfinstances/"
 
 
     # Argument parsing
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     # Build list of commands
     ####################
-    simulator = "../build/simulator"
+    simulator = "../../build/simulator "
 
 
     reference_flop = " --reference_flops 100Gf --wrench-energy-simulation "
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         # Standard algorithms
         for workflow_json_file in workflow_json_files:
             for alg in algorithms:
-                command = "../build/simulator " + platform +  reference_flop + "  --algorithms " + str(alg) + " --workflow " + workflow_json_file
+                command = simulator + platform +  reference_flop + "  --algorithms " + str(alg) + " --workflow " + workflow_json_file
                 commands_to_run.append(command)
     
         with Pool(num_threads) as p:
