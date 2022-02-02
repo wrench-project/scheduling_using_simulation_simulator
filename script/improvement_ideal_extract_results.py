@@ -76,7 +76,9 @@ if __name__ == "__main__":
 
 
 
-    print("\nALGORITHM USAGE STATISTICS:");
+    statistics_output_file_name = "improvement_ideal_extracted_statistics.txt"
+    f = open(statistics_output_file_name, "w")
+    f.write("ALGORITHM USAGE STATISTICS:\n");
     num_one_algo_was_used = 0
     for workflow in workflows:
         max_num_algorithms = 0
@@ -87,19 +89,20 @@ if __name__ == "__main__":
             max_num_algorithms = max(max_num_algorithms, results[workflow][cluster][1])
             ave_num_algorithms += results[workflow][cluster][1]
         ave_num_algorithms /= len(clusters)
-        print("  # of algs for " + workflow + ": max=" + str(max_num_algorithms) + "; ave=" + str(ave_num_algorithms))
+        f.write("  # of algs for " + workflow + ": max=" + str(max_num_algorithms) + "; ave=" + str(ave_num_algorithms) + "\n")
                 
 
-    print("\n  Number of cases in which our approach used one algorithm: " + str(num_one_algo_was_used) + " / " + str(len(workflows) * len(clusters)))
-    print("\n  Number of algorithms used at least once: " + str(len(algorithms_used)))
-    print("\n")
+    f.write("\n  Number of cases in which our approach used one algorithm: " + str(num_one_algo_was_used) + " / " + str(len(workflows) * len(clusters)) + "\n")
+    f.write("\n  Number of algorithms used at least once: " + str(len(algorithms_used)) + "\n")
+    f.close()
+    print("  Statistics writte to file " + statistics_output_file_name)
 
 
     # Save result dict to a file
     print("FULL RESULTS:")
-    output_file_name = "improvement_ideal_extracted_results.dict"
-    f = open(output_file_name, "w")
+    dict_output_file_name = "improvement_ideal_extracted_results.dict"
+    f = open(dict_output_file_name, "w")
     f.write(str(results) + "\n")
     f.close() 
-    print("  Result dictionary (used by the plotting script) written to file " + output_file_name)
+    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
 

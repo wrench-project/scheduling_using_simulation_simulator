@@ -100,7 +100,7 @@ if __name__ == "__main__":
         subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
     algorithms = [str(x) for x in range(0, num_algorithms-1)]  # No Random
 
-    workflow_json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
+    workflow_json_files = sorted(glob.glob(workflow_dir + "/**/*.json", recursive = True))
 
     #speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
