@@ -194,11 +194,11 @@ if __name__ == "__main__":
     xticks_labels = [0.0, 0.1, 0.2, 0.4, 0.8]
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(xticks_labels)
-    ax1.set_ylabel("Percentage improvement")
+    ax1.set_ylabel("% makespan improvement")
     #ax1.set_xlabel("Speculative work fraction")
     ax2.set_xticks(xticks)
     ax2.set_xticklabels(xticks_labels)
-    ax2.set_ylabel("Percentage improvement")
+    ax2.set_ylabel("% makespan improvement")
     ax2.set_xlabel("Simulation noise")
 
 

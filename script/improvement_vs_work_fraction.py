@@ -189,11 +189,11 @@ if __name__ == "__main__":
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(reversed(xticks))
-    ax1.set_ylabel("Percentage improvement")
+    ax1.set_ylabel("% makespan improvement")
     #ax1.set_xlabel("Speculative work fraction")
     ax2.set_xticks(xticks)
     ax2.set_xticklabels(reversed(xticks))
-    ax2.set_ylabel("Percentage improvement")
+    ax2.set_ylabel("% makespan improvement")
     ax2.set_xlabel("Simulated work fraction")
 
 
