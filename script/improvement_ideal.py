@@ -56,6 +56,7 @@ if __name__ == "__main__":
     workflow_id_map['blast-chameleon-medium-002.json'] = "7"
     workflow_id_map['soykb-chameleon-10fastq-20ch-001.json'] = "8"
     workflow_id_map['srasearch-chameleon-10a-003.json'] = "9"
+    workflows = dict(sorted(workflow_id_map.items(), key=lambda item: item[1])).keys()
 
     clusters_id_map = {}
     clusters_id_map['96:8:100Gf:100MBps'] = "1"
@@ -67,6 +68,7 @@ if __name__ == "__main__":
     clusters_id_map['32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps'] = "7"
     clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = "8"
     clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = "1"
+    clusters = dict(sorted(clusters_id_map.items(), key=lambda item: item[1])).keys()
 
     workflow_color_map = {}
     workflow_color_map['montage-chameleon-2mass-10d-001.json'] = "red"
@@ -139,7 +141,8 @@ if __name__ == "__main__":
     x_ticklabels = []
     for workflow in workflows:
         x_ticks.append(x_value)
-        x_ticklabels.append(workflow.split('-')[0])
+        #x_ticklabels.append(workflow.split('-')[0])
+        x_ticklabels.append("W"+workflow_id_map[workflow])
         y_to_plot = []
         for cluster in clusters:
             y_to_plot.append(results[workflow][cluster][0])
@@ -153,7 +156,8 @@ if __name__ == "__main__":
     ax1.set_xticks(x_ticks)
     ax1.set_xticklabels(x_ticklabels, rotation=45, fontsize=14)
 
-    ax1.set_ylabel("% improvement", fontsize=14)
+    ax1.set_ylabel("% makespan improvement", fontsize=14)
+    ax1.set_xlabel("Workflow", fontsize=14)
 
 
     plt.ylim(-3, 20)

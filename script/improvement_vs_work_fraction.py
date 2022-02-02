@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     ### PLOTTING
 
-    output_file = "improvements_vs_speculative_work_fraction.pdf"
+    output_file = "improvement_vs_work_fraction.pdf"
     sys.stderr.write("Generating " + output_file + "...\n")
 
 
@@ -182,8 +182,8 @@ if __name__ == "__main__":
             tmp['cmeans'].set_color(workflow_color_map[workflow])
 
 
-    ax1.legend([x['bodies'][0] for x in top_violins], [x.split("-")[0] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "top"], loc=3)
-    ax2.legend([x['bodies'][0] for x in bottom_violins], [x.split("-")[0] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "bottom"], loc=3)
+    ax1.legend([x['bodies'][0] for x in top_violins], ["W"+workflow_id_map[x] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "top"], loc=3)
+    ax2.legend([x['bodies'][0] for x in bottom_violins], ["W"+workflow_id_map[x] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "bottom"], loc=3)
     ax1.set_ylim(-150, 100)
 
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     ax2.set_xticks(xticks)
     ax2.set_xticklabels(reversed(xticks))
     ax2.set_ylabel("Percentage improvement")
-    ax2.set_xlabel("Speculative work fraction")
+    ax2.set_xlabel("Simulated work fraction")
 
 
 

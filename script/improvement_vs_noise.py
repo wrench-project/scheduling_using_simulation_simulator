@@ -56,6 +56,8 @@ if __name__ == "__main__":
     workflow_id_map['blast-chameleon-medium-002.json'] = "7"
     workflow_id_map['soykb-chameleon-10fastq-20ch-001.json'] = "8"
     workflow_id_map['srasearch-chameleon-10a-003.json'] = "9"
+    workflows = dict(sorted(workflow_id_map.items(), key=lambda item: item[1])).keys()
+
 
     clusters_id_map = {}
     clusters_id_map['96:8:100Gf:100MBps'] = "1"
@@ -112,7 +114,7 @@ if __name__ == "__main__":
 
     ### PLOTTING
 
-    output_file = "improvements_vs_noise.pdf"
+    output_file = "improvement_vs_noise.pdf"
     sys.stderr.write("Generating " + output_file + "...\n")
 
 
@@ -127,23 +129,24 @@ if __name__ == "__main__":
     workflow_top_or_bottom['montage-chameleon-2mass-10d-001.json'] = "top"
     workflow_top_or_bottom['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "top"
     workflow_top_or_bottom['bwa-chameleon-large-003.json'] = "top"
-    workflow_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "bottom"
-    workflow_top_or_bottom['seismology-chameleon-700p-001.json'] = "bottom"
-    workflow_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "top"
+    workflow_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "top"
+    workflow_top_or_bottom['seismology-chameleon-700p-001.json'] = "top"
+    workflow_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "bottom"
     workflow_top_or_bottom['blast-chameleon-medium-002.json'] = "bottom"
-    workflow_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "top"
+    workflow_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "bottom"
     workflow_top_or_bottom['srasearch-chameleon-10a-003.json'] = "bottom"
 
+
     workflow_offset = {}
-    scale = 1.4
+    scale = 1.2
     workflow_offset['montage-chameleon-2mass-10d-001.json'] = -.02 * scale
     workflow_offset['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = -.01 * scale
     workflow_offset['bwa-chameleon-large-003.json'] = .0 * scale
-    workflow_offset['1000genome-chameleon-8ch-250k-001.json'] = .01 * scale
-    workflow_offset['soykb-chameleon-10fastq-20ch-001.json'] = .02 * scale
+    workflow_offset['cycles-chameleon-2l-2c-12p-001.json'] = +.01 * scale
+    workflow_offset['seismology-chameleon-700p-001.json'] = +.02 * scale
 
-    workflow_offset['cycles-chameleon-2l-2c-12p-001.json'] = -.015 * scale
-    workflow_offset['seismology-chameleon-700p-001.json'] = -.005 * scale
+    workflow_offset['1000genome-chameleon-8ch-250k-001.json'] = -.015 * scale
+    workflow_offset['soykb-chameleon-10fastq-20ch-001.json'] = -.005 * scale
     workflow_offset['blast-chameleon-medium-002.json'] = .005 * scale
     workflow_offset['srasearch-chameleon-10a-003.json'] = .015 * scale
 
@@ -183,8 +186,8 @@ if __name__ == "__main__":
             tmp['cmeans'].set_color(workflow_color_map[workflow])
 
 
-    ax1.legend([x['bodies'][0] for x in top_violins], [x.split("-")[0] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "top"], loc=3)
-    ax2.legend([x['bodies'][0] for x in bottom_violins], [x.split("-")[0] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "bottom"], loc=3)
+    ax1.legend([x['bodies'][0] for x in top_violins], ["W"+workflow_id_map[x] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "top"], loc=3)
+    ax2.legend([x['bodies'][0] for x in bottom_violins], ["W"+workflow_id_map[x] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "bottom"], loc=3)
     ax1.set_ylim(-150, 100)
 
     xticks = [0.0, 0.1, 0.2, 0.3, 0.4]
