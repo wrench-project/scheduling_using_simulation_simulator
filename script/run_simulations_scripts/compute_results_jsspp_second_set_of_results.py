@@ -70,6 +70,7 @@ if __name__ == "__main__":
     try:
         num_threads = int(sys.argv[1])
         workflows = [int(x) for x in sys.argv[2].split(",")]
+        workflow_json_files = [workflow_json_files[x] for x in workflows]
     except:
         sys.stderr.write("Invalid argument\n")
         sys.exit(1)
@@ -100,7 +101,6 @@ if __name__ == "__main__":
         subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
     algorithms = [str(x) for x in range(0, num_algorithms-1)]  # No Random
 
-    workflow_json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
 
     periodic_scheduler_change_triggers = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]
     speculative_work_fractions = [1.0]
