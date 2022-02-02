@@ -11,9 +11,6 @@ global collection
 
 def run_simulation(command_to_run):
 
-    print(command_to_run)
-    return
-
     # Get the input JSON to check on whether we really need to run this
     json_output = subprocess.check_output(command_to_run + " --print_JSON", shell=True)
     config = json.loads(json_output)
