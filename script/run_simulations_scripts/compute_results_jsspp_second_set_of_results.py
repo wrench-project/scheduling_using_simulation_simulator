@@ -53,7 +53,7 @@ if __name__ == "__main__":
                ]
 
     workflow_dir = "../../wfinstances/"
-    workflow_json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
+    workflow_json_files = sorted(glob.glob(workflow_dir + "/**/*.json", recursive = True))
 
 
     # Argument parsing
