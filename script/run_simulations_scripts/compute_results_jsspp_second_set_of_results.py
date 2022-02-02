@@ -107,9 +107,7 @@ if __name__ == "__main__":
     noises = [0.0, 0.1, 0.2, 0.4, 0.8]
 
 
-    sys.stderr.write("Phase 1\n")
     commands_to_run = []
-
 
     platform = platform_configurations[0]
     for periodic_scheduler_change_trigger in periodic_scheduler_change_triggers:
