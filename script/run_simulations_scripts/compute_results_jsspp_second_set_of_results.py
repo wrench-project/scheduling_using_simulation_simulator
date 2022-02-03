@@ -41,35 +41,36 @@ def run_simulation(command_to_run):
 if __name__ == "__main__":
 
     platform_configurations = [
-            "--clusters 96:8:100Gf:100MBps",
-            "--clusters 48:8:50Gf:100MBps,48:8:150Gf:100MBps",
-            "--clusters 48:8:50Gf:100MBps,48:8:400Gf:10MBps",
+            #"--clusters 96:8:100Gf:100MBps",
+            #"--clusters 48:8:50Gf:100MBps,48:8:150Gf:100MBps",
+            #"--clusters 48:8:50Gf:100MBps,48:8:400Gf:10MBps",
             "--clusters 32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps",
-            "--clusters 32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps",
-            "--clusters 32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps",
-            "--clusters 32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps",
-            "--clusters 32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps",
-            "--clusters 32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps"
+            #"--clusters 32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps",
+            #"--clusters 32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps",
+            #"--clusters 32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps",
+            #"--clusters 32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps",
+            #"--clusters 32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps"
                ]
 
-    workflow_dir = "../wfinstances/"
+    workflow_dir = "../../wfinstances/"
+    workflow_json_files = sorted(glob.glob(workflow_dir + "/**/*.json", recursive = True))
 
 
     # Argument parsing
     ######################
     if (len(sys.argv) != 3):
-        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <platform configuration list>\n\n")
+        sys.stderr.write("Usage: " + sys.argv[0] + " <num threads> <workflow list>\n\n")
         sys.stderr.write("Example: " + sys.argv[0] + " 8 0,1,2\n\n")
-        sys.stderr.write("Platform configs:\n")
-        for i in range(0, len(platform_configurations)):
-            sys.stderr.write("\t"+str(i)+": " + platform_configurations[i] + "\n")
-        sys.stderr.write("\n    (The wfinstances directory in the root of this repo contains the workflows ")
-        sys.stderr.write("whose executions will be simulated)\n")
+        sys.stderr.write("Workflows :\n")
+        for i in range(0, len(workflow_json_files)):
+            sys.stderr.write("\t"+str(i)+": " + workflow_json_files[i] + "\n")
+        sys.stderr.write("\n")
         sys.exit(1)
 
     try:
         num_threads = int(sys.argv[1])
-        platform_configs = [int(x) for x in sys.argv[2].split(",")]
+        workflows = [int(x) for x in sys.argv[2].split(",")]
+        workflow_json_files = [workflow_json_files[x] for x in workflows]
     except:
         sys.stderr.write("Invalid argument\n")
         sys.exit(1)
@@ -87,12 +88,12 @@ if __name__ == "__main__":
 
     # Build list of commands
     ####################
-    simulator = "../build/simulator"
+    simulator = "../../build/simulator "
 
 
     reference_flop = " --reference_flops 100Gf --wrench-energy-simulation "
     scheduler_change_trigger = "--first_scheduler_change_trigger 0.00 "
-    periodic_scheduler_change_trigger = "--periodic_scheduler_change_trigger 0.1 "
+    speculative_work_fraction = "--speculative_work_fraction 1.0 "
 
     num_samples = 10
 
@@ -100,45 +101,30 @@ if __name__ == "__main__":
         subprocess.check_output(simulator + " --print_all_algorithms | wc -l", shell=True, encoding='utf-8').strip())
     algorithms = [str(x) for x in range(0, num_algorithms-1)]  # No Random
 
-    workflow_json_files = glob.glob(workflow_dir + "/**/*.json", recursive = True)
 
-    #speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    speculative_work_fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    #noises = [0.0, 0.1, 0.2, 0.4, 0.8]
+    periodic_scheduler_change_triggers = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]
+    speculative_work_fractions = [1.0]
     noises = [0.0, 0.1, 0.2, 0.4, 0.8]
 
-    sys.stderr.write("Phase 1\n")
+
     commands_to_run = []
 
-    # Look over all platforms
-    for platform_config_index in platform_configs:
+    platform = platform_configurations[0]
+    for periodic_scheduler_change_trigger in periodic_scheduler_change_triggers:
+        periodic_scheduler_change_trigger = "--periodic_scheduler_change_trigger " + str(periodic_scheduler_change_trigger) + " " 
 
-        platform = platform_configurations[platform_config_index]
-
-        # Standard algorithms
-        for workflow_json_file in workflow_json_files:
-            for alg in algorithms:
-                command = "../build/simulator " + platform +  reference_flop + "  --algorithms " + str(alg) + " --workflow " + workflow_json_file
-                commands_to_run.append(command)
-    
-        with Pool(num_threads) as p:
-            p.map(run_simulation, commands_to_run)
-    
-        sys.stderr.write("Phase 2\n")
-    
-        # Speculative algorithms
         for workflow in workflow_json_files:
             sys.stderr.write("  " + workflow + "\n")
             commands_to_run = []
             for speculative_work_fraction in speculative_work_fractions:
-                speculative_work_fraction = "--speculative_work_fraction " + str(speculative_work_fraction)
+                speculative_work_fraction = "--speculative_work_fraction " + str(speculative_work_fraction) + " "
                 for noise in noises:
                     if noise == 0.0:
                         seeds = [1000]
                     else:
                         seeds = range(1000, 1000 + num_samples)
                     for seed in seeds:
-                        command = "../build/simulator " + platform + reference_flop + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
+                        command = simulator + platform + reference_flop + scheduler_change_trigger + periodic_scheduler_change_trigger + speculative_work_fraction
                         # All algorithms BUT random
                         command += " --workflow " + workflow + " --algorithms 0-"+str(num_algorithms-2)
                         command += " --simulation_noise " + str(noise) + " --noise_seed " + str(seed)
