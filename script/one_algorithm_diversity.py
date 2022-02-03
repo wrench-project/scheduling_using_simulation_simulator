@@ -18,8 +18,10 @@ def generate_plot(mat, x_labels, y_labels):
 
     fig, ax = plt.subplots()
 
-    ax.set_xticks(np.arange(len(x_labels)), labels=x_labels)
-    ax.set_yticks(np.arange(len(y_labels)), labels=y_labels)
+    ax.set_xticks(np.arange(len(x_labels)))
+    ax.set_xlabel(x_labels)
+    ax.set_yticks(np.arange(len(y_labels)))
+    ax.set_ylabel(y_labels)
     
     ax.imshow(mat, cmap='hot', interpolation="nearest")
 
