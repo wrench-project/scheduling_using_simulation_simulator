@@ -45,10 +45,10 @@ if __name__ == "__main__":
     id_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "2"
     id_map['bwa-chameleon-large-003.json'] = "3"
     id_map['cycles-chameleon-2l-2c-12p-001.json'] = "4"
-    id_map['1000genome-chameleon-8ch-250k-001.json'] = "6"
-    id_map['blast-chameleon-medium-002.json'] = "7"
-    id_map['soykb-chameleon-10fastq-20ch-001.json'] = "8"
-    id_map['srasearch-chameleon-10a-003.json'] = "9"
+    id_map['1000genome-chameleon-8ch-250k-001.json'] = "5"
+    id_map['blast-chameleon-medium-002.json'] = "6"
+    id_map['soykb-chameleon-10fastq-20ch-001.json'] = "7"
+    id_map['srasearch-chameleon-10a-003.json'] = "8"
 
     color_map['montage-chameleon-2mass-10d-001.json'] = "red"
     color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
@@ -56,10 +56,11 @@ if __name__ == "__main__":
     color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
     color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
     color_map['blast-chameleon-medium-002.json'] = "olive"
-    color_map['soykb-chameleon-10fastq-20ch-001.json'] = "gray"
+    color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
     color_map['srasearch-chameleon-10a-003.json'] = "magenta"
 
-    items = sorted(items)
+    items = dict(sorted(id_map.items(), key=lambda item: item[1])).keys()
+
 
     output_file = "improvement_vs_frequency_for_noise_"+sys.argv[1]+".pdf"
 

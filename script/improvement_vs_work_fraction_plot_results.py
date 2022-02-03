@@ -43,7 +43,7 @@ if __name__ == "__main__":
         color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
         color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
         color_map['blast-chameleon-medium-002.json'] = "olive"
-        color_map['soykb-chameleon-10fastq-20ch-001.json'] = "gray"
+        color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
         color_map['srasearch-chameleon-10a-003.json'] = "magenta"
 
     else:
@@ -130,7 +130,8 @@ if __name__ == "__main__":
         item_offset['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = .005 * scale
         item_offset['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = .015 * scale
 
-    
+    items = dict(sorted(id_map.items(), key=lambda item: item[1])).keys()
+ 
 
     fontsize = 18
 
