@@ -165,15 +165,15 @@ if __name__ == "__main__":
                 tmp = ax2.violinplot(y_to_plot, positions=[mapping_to_x_axis[simulation_noise] + offset -0.00], widths=[violin_width], showmeans=True)
                 bottom_violins.append(tmp)
             for pc in tmp['bodies']:
-                pc.set_facecolor(item_color_map[item])
-                pc.set_facecolor(item_color_map[item])
-                pc.set_edgecolor(item_color_map[item])
-            tmp['cmaxes'].set_color(item_color_map[item])
+                pc.set_facecolor(color_map[item])
+                pc.set_facecolor(color_map[item])
+                pc.set_edgecolor(color_map[item])
+            tmp['cmaxes'].set_color(color_map[item])
             tmp['cmaxes'].set_linewidth(2)
-            tmp['cmins'].set_color(item_color_map[item])
-            tmp['cbars'].set_color(item_color_map[item])
+            tmp['cmins'].set_color(color_map[item])
+            tmp['cbars'].set_color(color_map[item])
             tmp['cbars'].set_linewidth(1)
-            tmp['cmeans'].set_color(item_color_map[item])
+            tmp['cmeans'].set_color(color_map[item])
 
 
     fontsize = 18
