@@ -55,6 +55,8 @@ if __name__ == "__main__":
 
     ### PLOTTING
 
+    fontsize = 18
+
     output_file = "improvement_ideal.pdf"
     sys.stderr.write("Generating " + output_file + "...\n")
 
@@ -77,16 +79,18 @@ if __name__ == "__main__":
 
         ax1.plot(x_to_plot,y_to_plot, '.', color=workflow_color_map[workflow], markersize=15)
         ax1.plot([x_value - 0.025, x_value + 0.025], [mean_y, mean_y], color=workflow_color_map[workflow], linewidth=4)
+        #sys.stderr.write(workflow + ": average=" + str(mean_y) + "\n")
         x_value += 0.1
-             
-    ax1.set_xticks(x_ticks)
-    ax1.set_xticklabels(x_ticklabels, rotation=45, fontsize=14)
 
-    ax1.set_ylabel("% makespan improvement", fontsize=14)
-    ax1.set_xlabel("Workflow", fontsize=14)
+
+    ax1.set_xticks(x_ticks)
+    ax1.set_xticklabels(x_ticklabels, rotation=45, fontsize=fontsize)
+
+    ax1.set_ylabel("% makespan improvement", fontsize=fontsize)
+    ax1.set_xlabel("Workflow", fontsize=fontsize)
 
     plt.ylim(-3, 20)
-    plt.yticks(fontsize=14)
+    plt.yticks(fontsize=fontsize)
     f.tight_layout()
                 
     plt.savefig(output_file)

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import random
-import subprocess
 from os.path import exists
 import glob
-from multiprocessing import Pool
 import sys
 import json
 from pymongo import MongoClient
@@ -80,19 +78,23 @@ if __name__ == "__main__":
     f = open(statistics_output_file_name, "w")
     f.write("ALGORITHM USAGE STATISTICS:\n");
     num_one_algo_was_used = 0
+    total_average = 0
     for workflow in workflows:
         max_num_algorithms = 0
         ave_num_algorithms = 0
         for cluster in clusters:
             if results[workflow][cluster][1] == 1:
+                print("ONE:  " + workflow + " " + cluster)
                 num_one_algo_was_used += 1
             max_num_algorithms = max(max_num_algorithms, results[workflow][cluster][1])
             ave_num_algorithms += results[workflow][cluster][1]
+            total_average += results[workflow][cluster][1]
         ave_num_algorithms /= len(clusters)
         f.write("  # of algs for " + workflow + ": max=" + str(max_num_algorithms) + "; ave=" + str(ave_num_algorithms) + "\n")
-                
+                 
 
     f.write("\n  Number of cases in which our approach used one algorithm: " + str(num_one_algo_was_used) + " / " + str(len(workflows) * len(clusters)) + "\n")
+    f.write("\n  Number of different algorithms used on average: " + str(total_average / (len(workflows) * len(clusters))) + "\n")
     f.write("\n  Number of algorithms used at least once: " + str(len(algorithms_used)) + "\n")
     f.close()
     print("  Statistics writte to file " + statistics_output_file_name)

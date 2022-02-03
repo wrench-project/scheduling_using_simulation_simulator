@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 import random
-import subprocess
 from os.path import exists
 import glob
-from multiprocessing import Pool
 import sys
 import json
 from pymongo import MongoClient
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
-import random
 
 global collection
 
@@ -45,15 +40,15 @@ if __name__ == "__main__":
 
     simulation_noise = 0.0
 
-    ### COMPUTING RESULTS
-    results = {}
+    ### COMPUTING RESULTS BY WORKLOW
+    results_by_workflow = {}
     for speculative_work_fraction in speculative_work_fractions:
         sys.stderr.write("Processing work fraction " + str(speculative_work_fraction) + "\n")
-        results[speculative_work_fraction] = {}
+        results_by_workflow[speculative_work_fraction] = {}
         for workflow in workflows:
             sys.stderr.write("  Processing workflow " + str(workflow) + " ")
             sys.stderr.flush()
-            results[speculative_work_fraction][workflow] = []
+            results_by_workflow[speculative_work_fraction][workflow] = []
             worst_relative_improvement = 0;
             for baseline_algo in algorithms:
                 sys.stderr.write(".")
@@ -67,13 +62,46 @@ if __name__ == "__main__":
                             baseline_makespan = doc["makespan"]
                     relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
                     worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
-                    results[speculative_work_fraction][workflow].append(relative_improvement)
+                    results_by_workflow[speculative_work_fraction][workflow].append(relative_improvement)
             #print("WORST: " + str(worst_relative_improvement))
             sys.stderr.write("\n")
 
     # Save result dict to a file
-    output_file_name = "improvement_vs_work_fraction_extracted_results.dict"
+    output_file_name = "improvement_vs_work_fraction_extracted_results_by_workflow.dict"
     f = open(output_file_name, "w")
-    f.write(str(results) + "\n")
+    f.write(str(results_by_workflow) + "\n")
+    f.close()
+    print("  Result dictionary (used by the plotting script) written to file " + output_file_name)
+
+    ### COMPUTING RESULTS BY CLUSTER
+    results_by_cluster = {}
+    for speculative_work_fraction in speculative_work_fractions:
+        sys.stderr.write("Processing work fraction " + str(speculative_work_fraction) + "\n")
+        results_by_cluster[speculative_work_fraction] = {}
+        for cluster in clusters:
+            sys.stderr.write("  Processing cluster " + str(cluster) + " ")
+            sys.stderr.flush()
+            results_by_cluster[speculative_work_fraction][cluster] = []
+            worst_relative_improvement = 0;
+            for baseline_algo in algorithms:
+                sys.stderr.write(".")
+                sys.stderr.flush()
+                for workflow in workflows:
+                    cursor = collection.find({"clusters":cluster,"workflow":workflow})
+                    for doc in cursor:
+                        if (len(doc["algorithms"].split(",")) != 1) and (doc["simulation_noise"] == simulation_noise) and (doc["speculative_work_fraction"] == speculative_work_fraction):
+                            our_makespan = doc["makespan"]
+                        elif doc["algorithms"] == baseline_algo:
+                            baseline_makespan = doc["makespan"]
+                    relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
+                    worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
+                    results_by_cluster[speculative_work_fraction][cluster].append(relative_improvement)
+            #print("WORST: " + str(worst_relative_improvement))
+            sys.stderr.write("\n")
+
+    # Save result dict to a file
+    output_file_name = "improvement_vs_work_fraction_extracted_results_by_cluster.dict"
+    f = open(output_file_name, "w")
+    f.write(str(results_by_cluster) + "\n")
     f.close()
     print("  Result dictionary (used by the plotting script) written to file " + output_file_name)
