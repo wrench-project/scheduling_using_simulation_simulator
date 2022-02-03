@@ -32,17 +32,15 @@ if __name__ == "__main__":
         id_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "2"
         id_map['bwa-chameleon-large-003.json'] = "3"
         id_map['cycles-chameleon-2l-2c-12p-001.json'] = "4"
-        id_map['seismology-chameleon-700p-001.json'] = "5"
-        id_map['1000genome-chameleon-8ch-250k-001.json'] = "6"
-        id_map['blast-chameleon-medium-002.json'] = "7"
-        id_map['soykb-chameleon-10fastq-20ch-001.json'] = "8"
-        id_map['srasearch-chameleon-10a-003.json'] = "9"
+        id_map['1000genome-chameleon-8ch-250k-001.json'] = "5"
+        id_map['blast-chameleon-medium-002.json'] = "6"
+        id_map['soykb-chameleon-10fastq-20ch-001.json'] = "7"
+        id_map['srasearch-chameleon-10a-003.json'] = "8"
     
         color_map['montage-chameleon-2mass-10d-001.json'] = "red"
         color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
         color_map['bwa-chameleon-large-003.json'] = "green"
         color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-        color_map['seismology-chameleon-700p-001.json'] = "chocolate"
         color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
         color_map['blast-chameleon-medium-002.json'] = "olive"
         color_map['soykb-chameleon-10fastq-20ch-001.json'] = "gray"
@@ -88,24 +86,23 @@ if __name__ == "__main__":
         item_top_or_bottom['montage-chameleon-2mass-10d-001.json'] = "top"
         item_top_or_bottom['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "top"
         item_top_or_bottom['bwa-chameleon-large-003.json'] = "top"
-        item_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "bottom"
-        item_top_or_bottom['seismology-chameleon-700p-001.json'] = "bottom"
         item_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "top"
+
+        item_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "bottom"
         item_top_or_bottom['blast-chameleon-medium-002.json'] = "bottom"
-        item_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "top"
+        item_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "bottom"
         item_top_or_bottom['srasearch-chameleon-10a-003.json'] = "bottom"
 
         scale = 1.45
-        item_offset['montage-chameleon-2mass-10d-001.json'] = -.02 * scale
-        item_offset['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = -.01 * scale
-        item_offset['bwa-chameleon-large-003.json'] = .0 * scale
-        item_offset['1000genome-chameleon-8ch-250k-001.json'] = .01 * scale
-        item_offset['soykb-chameleon-10fastq-20ch-001.json'] = .02 * scale
+        item_offset['montage-chameleon-2mass-10d-001.json'] = -.015 * scale
+        item_offset['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = -.005 * scale
+        item_offset['bwa-chameleon-large-003.json'] = .005 * scale
+        item_offset['1000genome-chameleon-8ch-250k-001.json'] = .015 * scale
     
         item_offset['cycles-chameleon-2l-2c-12p-001.json'] = -.015 * scale
-        item_offset['seismology-chameleon-700p-001.json'] = -.005 * scale
-        item_offset['blast-chameleon-medium-002.json'] = .005 * scale
-        item_offset['srasearch-chameleon-10a-003.json'] = .015 * scale
+        item_offset['blast-chameleon-medium-002.json'] = -.005 * scale
+        item_offset['srasearch-chameleon-10a-003.json'] = .005 * scale
+        item_offset['soykb-chameleon-10fastq-20ch-001.json'] = .015 * scale
 
     else:
 
@@ -181,17 +178,17 @@ if __name__ == "__main__":
             tmp['cmeans'].set_color(color_map[item])
     
     
-        ax1.legend([x['bodies'][0] for x in top_violins], [key_character+id_map[x] for x in item_top_or_bottom if item_top_or_bottom[x] == "top"], loc=3, fontsize=fontsize-1, ncol=3)
+        ax1.legend([x['bodies'][0] for x in top_violins], [key_character+id_map[x] for x in item_top_or_bottom if item_top_or_bottom[x] == "top"], loc=3, fontsize=fontsize-1, ncol=2)
         ax2.legend([x['bodies'][0] for x in bottom_violins], [key_character+id_map[x] for x in item_top_or_bottom if item_top_or_bottom[x] == "bottom"], loc=3, fontsize=fontsize-1, ncol=2)
         ax1.set_ylim(-150, 100)
     
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
     ax1.set_xticks(xticks)
-    ax1.set_yticklabels(["  -150", "100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
+    ax1.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
     ax1.set_xticklabels([1.0, 0.9, 0.8, 0.6, 0.4, 0.2, 0.1], fontsize=fontsize)
     ax2.set_xticks(xticks)
     ax2.set_xticklabels([1.0, 0.9, 0.8, 0.6, 0.4, 0.2, 0.1], fontsize=fontsize)
-    ax2.set_yticklabels(["  -150", "100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
+    ax2.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
     ax2.set_xlabel("Simulated work fraction", fontsize=fontsize)
 
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')

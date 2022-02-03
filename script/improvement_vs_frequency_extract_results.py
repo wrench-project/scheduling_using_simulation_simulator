@@ -71,6 +71,7 @@ if __name__ == "__main__":
                                 baseline_makespan = doc["makespan"]
                         relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
                         results_by_workflow[simulation_noise][frequency][workflow].append(relative_improvement)
+                sys.stderr.write("ADDED " + str(len(results_by_workflow[simulation_noise][frequency][workflow])) + " RESULTS\n")
                 sys.stderr.write("\n")
 
 

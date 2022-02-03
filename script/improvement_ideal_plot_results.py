@@ -22,11 +22,10 @@ if __name__ == "__main__":
     workflow_id_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "2"
     workflow_id_map['bwa-chameleon-large-003.json'] = "3"
     workflow_id_map['cycles-chameleon-2l-2c-12p-001.json'] = "4"
-    workflow_id_map['seismology-chameleon-700p-001.json'] = "5"
-    workflow_id_map['1000genome-chameleon-8ch-250k-001.json'] = "6"
-    workflow_id_map['blast-chameleon-medium-002.json'] = "7"
-    workflow_id_map['soykb-chameleon-10fastq-20ch-001.json'] = "8"
-    workflow_id_map['srasearch-chameleon-10a-003.json'] = "9"
+    workflow_id_map['1000genome-chameleon-8ch-250k-001.json'] = "5"
+    workflow_id_map['blast-chameleon-medium-002.json'] = "6"
+    workflow_id_map['soykb-chameleon-10fastq-20ch-001.json'] = "7"
+    workflow_id_map['srasearch-chameleon-10a-003.json'] = "8"
     workflows = dict(sorted(workflow_id_map.items(), key=lambda item: item[1])).keys()
 
     clusters_id_map = {}
@@ -46,10 +45,9 @@ if __name__ == "__main__":
     workflow_color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
     workflow_color_map['bwa-chameleon-large-003.json'] = "green"
     workflow_color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-    workflow_color_map['seismology-chameleon-700p-001.json'] = "chocolate"
     workflow_color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
     workflow_color_map['blast-chameleon-medium-002.json'] = "olive"
-    workflow_color_map['soykb-chameleon-10fastq-20ch-001.json'] = "gray"
+    workflow_color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
     workflow_color_map['srasearch-chameleon-10a-003.json'] = "magenta"
 
 

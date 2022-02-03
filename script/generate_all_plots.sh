@@ -48,6 +48,21 @@ fi
 echo cp improvement_vs_noise_by_workflow.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
 cp improvement_vs_noise_by_workflow.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
 
+# FREQUENCY BY WORKFLOW
+if [ ! -f improvement_vs_noise_and_frequency_extracted_results_by_workflow.dict ]; then
+    echo "Extracting results..."
+    ./improvement_vs_frequency_extract_results.py
+fi
+
+noises=("0.0" "0.1" "0.2" "0.4" "0.8")
+for noise in ${noises[@]}; do
+    ./improvement_vs_frequency_plot_results.py $noise
+    echo cp improvement_vs_frequency_for_noise_$noise.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+    cp improvement_vs_frequency_for_noise_$noise.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+done
+
+
+
 
 
 
