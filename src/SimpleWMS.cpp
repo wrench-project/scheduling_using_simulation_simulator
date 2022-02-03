@@ -118,6 +118,7 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     read(pipefd[0], &child_time, sizeof(double));
+//                    std::cerr << "Child told me: " << child_time << "\n";
                     child_time = child_time + child_time * random_dist(rng);
                     makespans.push_back(child_time);
                     waitpid(pid, &stat_loc, 0);
@@ -167,7 +168,7 @@ int SimpleWMS::main() {
         write(pipefd[1], &now, sizeof(double));
         close(pipefd[1]);
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
-    }
+    } 
     this->job_manager.reset();
 
 
