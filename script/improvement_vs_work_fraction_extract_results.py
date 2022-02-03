@@ -46,13 +46,15 @@ if __name__ == "__main__":
         sys.stderr.write("Processing work fraction " + str(speculative_work_fraction) + "\n")
         results_by_workflow[speculative_work_fraction] = {}
         for workflow in workflows:
-            sys.stderr.write("  Processing workflow " + str(workflow) + " ")
+            sys.stderr.write("  Processing workflow " + str(workflow) + "\n")
             sys.stderr.flush()
             results_by_workflow[speculative_work_fraction][workflow] = []
             worst_relative_improvement = 0;
+            num_losses={}
             for baseline_algo in algorithms:
-                sys.stderr.write(".")
-                sys.stderr.flush()
+                num_losses[baseline_algo] = 0
+                #sys.stderr.write(".")
+                #sys.stderr.flush()
                 for cluster in clusters:
                     cursor = collection.find({"clusters":cluster,"workflow":workflow})
                     for doc in cursor:
@@ -61,9 +63,16 @@ if __name__ == "__main__":
                         elif doc["algorithms"] == baseline_algo:
                             baseline_makespan = doc["makespan"]
                     relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
+                    if relative_improvement < 0:
+                        num_losses[baseline_algo] += 1
                     worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
                     results_by_workflow[speculative_work_fraction][workflow].append(relative_improvement)
             #print("WORST: " + str(worst_relative_improvement))
+            total_losses = sum([num_losses[x] for x in num_losses])
+            total_wins = 9*36  - total_losses
+            sys.stderr.write("  TOTAL LOSS/WIN = " + str(total_losses) + "/" + str(total_wins) + "\n")
+            sys.stderr.write("  MAX LOSS TO ONE ALG = " + str(max(num_losses.values())) + "\n")
+            sys.stderr.write("  BEST ONE ALG = " + max(num_losses , key=num_losses.get))
             sys.stderr.write("\n")
 
     # Save result dict to a file
