@@ -47,9 +47,13 @@ if __name__ == "__main__":
     algorithms_used = set()
 
     results = {}
+    results_sequence = {}
     for workflow in workflows:
         sys.stderr.write("\nProcessing workflow " + str(workflow) + " ")
         results[workflow] = {}
+        results_sequence[workflow] = {}
+        for a in algorithms:
+            results_sequence[workflow][a] = 0
         for cluster in clusters:
             sys.stderr.flush()
             worst_improvement = 0
@@ -64,6 +68,7 @@ if __name__ == "__main__":
                         algos_used = list(set(doc["algorithm_sequence"].split(",")))
                         num_different_algos = len(algos_used)
                         for a in algos_used:
+                            results_sequence[workflow][a] += 1
                             algorithms_used.add(a)
                     elif doc["algorithms"] == baseline_algo:
                         baseline_makespan = doc["makespan"]
@@ -71,6 +76,73 @@ if __name__ == "__main__":
             best_baseline = min(baselines)
             relative_improvement = 100.0 * (best_baseline - our_makespan) / baseline_makespan
             results[workflow][cluster]  = [relative_improvement, num_different_algos]
+
+    results_sequence_by_cluster = {}
+    for cluster in clusters:
+        sys.stderr.write("\nProcessing cluster " + str(cluster) + " ")
+        results_sequence_by_cluster[cluster] = {}
+        for a in algorithms:
+            results_sequence_by_cluster[cluster][a] = 0
+        for workflow in workflows:
+            sys.stderr.flush()
+            worst_improvement = 0
+            baselines = []
+            for baseline_algo in algorithms:
+                sys.stderr.write(".")
+                sys.stderr.flush()
+                cursor = collection.find({"clusters":cluster,"workflow":workflow})
+                for doc in cursor:
+                    if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == noise):
+                        algos_used = list(set(doc["algorithm_sequence"].split(",")))
+                        num_different_algos = len(algos_used)
+                        for a in algos_used:
+                            results_sequence_by_cluster[cluster][a] += 1
+
+
+    results_individual_dfb = {}
+    for workflow in workflows:
+        results_individual_dfb[workflow] = {}
+        for baseline_algo in algorithms:
+            results_individual_dfb[workflow][baseline_algo] = 0
+        for cluster in clusters:
+            makespans = {}
+            cursor = collection.find({"clusters":cluster,"workflow":workflow})
+            for doc in cursor:
+               if (len(doc["algorithms"].split(",")) == 1):
+                    makespans[doc["algorithms"]] = float(doc["makespan"])
+            best = min(list(makespans.values()))
+            for baseline_algo in algorithms:
+                dfb = 100.0*(float(makespans[baseline_algo]) - best) / best
+                results_individual_dfb[workflow][baseline_algo] += dfb
+        for baseline_algo in algorithms:
+            results_individual_dfb[workflow][baseline_algo] /= len(clusters)
+
+    # Save result dicts to a file
+    print("FULL RESULTS:")
+    dict_output_file_name = "improvement_ideal_extracted_results.dict"
+    f = open(dict_output_file_name, "w")
+    f.write(str(results) + "\n")
+    f.close() 
+    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
+
+    dict_output_file_name = "improvement_ideal_extracted_results_sequence.dict"
+    f = open(dict_output_file_name, "w")
+    f.write(str(results_sequence) + "\n")
+    f.close() 
+    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
+
+    dict_output_file_name = "improvement_ideal_extracted_results_sequence_by_cluster.dict"
+    f = open(dict_output_file_name, "w")
+    f.write(str(results_sequence_by_cluster) + "\n")
+    f.close() 
+    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
+
+
+    dict_output_file_name = "improvement_ideal_extracted_results_individual_dfb.dict"
+    f = open(dict_output_file_name, "w")
+    f.write(str(results_individual_dfb) + "\n")
+    f.close() 
+    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
 
 
 
@@ -100,11 +172,4 @@ if __name__ == "__main__":
     print("  Statistics writte to file " + statistics_output_file_name)
 
 
-    # Save result dict to a file
-    print("FULL RESULTS:")
-    dict_output_file_name = "improvement_ideal_extracted_results.dict"
-    f = open(dict_output_file_name, "w")
-    f.write(str(results) + "\n")
-    f.close() 
-    print("  Result dictionary (used by the plotting script) written to file " + dict_output_file_name)
 

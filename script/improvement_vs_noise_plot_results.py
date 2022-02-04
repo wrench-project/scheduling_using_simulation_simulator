@@ -43,7 +43,7 @@ if __name__ == "__main__":
         color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
         color_map['bwa-chameleon-large-003.json'] = "green"
         color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-        color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
+        color_map['1000genome-chameleon-8ch-250k-001.json'] = "midnightblue"
         color_map['blast-chameleon-medium-002.json'] = "olive"
         color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
         color_map['srasearch-chameleon-10a-003.json'] = "magenta"
@@ -64,11 +64,10 @@ if __name__ == "__main__":
         color_map['48:8:400Gf:10MBps,48:8:50Gf:100MBps'] = "green"
         color_map['32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps'] = "darkslategray"
         color_map['32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps'] = "chocolate"
-        color_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "orange"
+        color_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "midnightblue"
         color_map['32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps'] = "olive"
         color_map['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = "gray"
         color_map['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = "magenta"
-
 
     items = dict(sorted(id_map.items(), key=lambda item: item[1])).keys()
 
@@ -90,6 +89,7 @@ if __name__ == "__main__":
         item_top_or_bottom['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "top"
         item_top_or_bottom['bwa-chameleon-large-003.json'] = "top"
         item_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "top"
+
         item_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "bottom"
         item_top_or_bottom['blast-chameleon-medium-002.json'] = "bottom"
         item_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "bottom"
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     top_violins = []
     bottom_violins = []
     for simulation_noise in noises:
-        for item in items
+        for item in items:
             y_to_plot = results[simulation_noise][item]
             offset = item_offset[item]
             if (item_top_or_bottom[item] == "top"):
@@ -171,7 +171,6 @@ if __name__ == "__main__":
             tmp['cbars'].set_color(color_map[item])
             tmp['cbars'].set_linewidth(1)
             tmp['cmeans'].set_color(color_map[item])
-
 
     fontsize = 18
 

@@ -61,6 +61,17 @@ for noise in ${noises[@]}; do
     cp improvement_vs_frequency_for_noise_$noise.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
 done
 
+# HEATMAPS
+./improvement_ideal_plot_results_algorithm_usage.py
+echo cp improvement_ideal_algorithm_usage.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+cp improvement_ideal_algorithm_usage.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+
+./improvement_ideal_plot_results_individual_dfb.py
+echo cp improvement_ideal_individual_dfb.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+cp improvement_ideal_individual_dfb.pdf $HOME/PAPERS/WRENCH/wrench-papers/jsspp_2022/figures/
+
+
+
 
 
 

@@ -41,7 +41,7 @@ if __name__ == "__main__":
         color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
         color_map['bwa-chameleon-large-003.json'] = "green"
         color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-        color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
+        color_map['1000genome-chameleon-8ch-250k-001.json'] = "midnightblue"
         color_map['blast-chameleon-medium-002.json'] = "olive"
         color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
         color_map['srasearch-chameleon-10a-003.json'] = "magenta"
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         color_map['48:8:400Gf:10MBps,48:8:50Gf:100MBps'] = "green"
         color_map['32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps'] = "darkslategray"
         color_map['32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps'] = "chocolate"
-        color_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "orange"
+        color_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "midnightblue"
         color_map['32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps'] = "olive"
         color_map['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = "gray"
         color_map['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = "magenta"
@@ -86,23 +86,24 @@ if __name__ == "__main__":
         item_top_or_bottom['montage-chameleon-2mass-10d-001.json'] = "top"
         item_top_or_bottom['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "top"
         item_top_or_bottom['bwa-chameleon-large-003.json'] = "top"
-        item_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "top"
+        item_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "top"
 
-        item_top_or_bottom['cycles-chameleon-2l-2c-12p-001.json'] = "bottom"
+        item_top_or_bottom['1000genome-chameleon-8ch-250k-001.json'] = "bottom"
         item_top_or_bottom['blast-chameleon-medium-002.json'] = "bottom"
         item_top_or_bottom['soykb-chameleon-10fastq-20ch-001.json'] = "bottom"
         item_top_or_bottom['srasearch-chameleon-10a-003.json'] = "bottom"
+
 
         scale = 1.45
         item_offset['montage-chameleon-2mass-10d-001.json'] = -.015 * scale
         item_offset['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = -.005 * scale
         item_offset['bwa-chameleon-large-003.json'] = .005 * scale
-        item_offset['1000genome-chameleon-8ch-250k-001.json'] = .015 * scale
+        item_offset['cycles-chameleon-2l-2c-12p-001.json'] = .015 * scale
     
-        item_offset['cycles-chameleon-2l-2c-12p-001.json'] = -.015 * scale
+        item_offset['1000genome-chameleon-8ch-250k-001.json'] = -.015 * scale
         item_offset['blast-chameleon-medium-002.json'] = -.005 * scale
-        item_offset['srasearch-chameleon-10a-003.json'] = .005 * scale
-        item_offset['soykb-chameleon-10fastq-20ch-001.json'] = .015 * scale
+        item_offset['soykb-chameleon-10fastq-20ch-001.json'] = .005 * scale
+        item_offset['srasearch-chameleon-10a-003.json'] = .015 * scale
 
     else:
 
@@ -190,7 +191,7 @@ if __name__ == "__main__":
     ax2.set_xticks(xticks)
     ax2.set_xticklabels([1.0, 0.9, 0.8, 0.6, 0.4, 0.2, 0.1], fontsize=fontsize)
     ax2.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
-    ax2.set_xlabel("Simulated work fraction", fontsize=fontsize)
+    ax2.set_xlabel("Simulated work fraction ( " + r'$\beta$' + ")", fontsize=fontsize)
 
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
 

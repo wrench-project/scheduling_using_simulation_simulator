@@ -45,7 +45,7 @@ if __name__ == "__main__":
     workflow_color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
     workflow_color_map['bwa-chameleon-large-003.json'] = "green"
     workflow_color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-    workflow_color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
+    workflow_color_map['1000genome-chameleon-8ch-250k-001.json'] = "midnightblue"
     workflow_color_map['blast-chameleon-medium-002.json'] = "olive"
     workflow_color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
     workflow_color_map['srasearch-chameleon-10a-003.json'] = "magenta"

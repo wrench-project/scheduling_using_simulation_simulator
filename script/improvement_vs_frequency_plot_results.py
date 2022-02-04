@@ -54,7 +54,7 @@ if __name__ == "__main__":
     color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
     color_map['bwa-chameleon-large-003.json'] = "green"
     color_map['cycles-chameleon-2l-2c-12p-001.json'] = "darkslategray"
-    color_map['1000genome-chameleon-8ch-250k-001.json'] = "orange"
+    color_map['1000genome-chameleon-8ch-250k-001.json'] = "midnightblue"
     color_map['blast-chameleon-medium-002.json'] = "olive"
     color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
     color_map['srasearch-chameleon-10a-003.json'] = "magenta"
