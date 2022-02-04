@@ -13,35 +13,6 @@ import numpy as np
 
 global collection
 
-def generate_plot(mat, x_labels, y_labels):
-
-
-    fig, ax = plt.subplots()
-		
-    ax.set_xticks(np.arange(len(x_labels)))
-    ax.set_xlabel(x_labels)
-    ax.set_yticks(np.arange(len(y_labels)))
-    ax.set_ylabel(y_labels)
-    
-    ax.imshow(mat, cmap='hot', interpolation="nearest")
-
-    for i in range(len(y_labels)):
-        for j in range(len(x_labels)):
-            text = ax.text(j, i, f"{round(mat[i, j], 2)}%", ha="center", va="center", color="r")
-
-    plt.show()
-
-    #TODO: fix spacing issue
-    #TODO: add color bar
-		#TODO: change labels
-		# 
-
-    plt.savefig("one_algo_diversity.pdf")
-    plt.close()
-
-    return
-
-
 if __name__ == "__main__":
 
     # Setup Mongo
@@ -67,32 +38,26 @@ if __name__ == "__main__":
 
     workflows = sorted(list(workflows))
     clusters = sorted(list(clusters))
-    algorithms = sorted(list(algorithms))
-    degradation_mat = []
+    algorithms = sorted(list(algorithms), key=int)
+    num_scenarios = len(workflows) * len(clusters)
 
-    for cluster in clusters:
-        cluster_mat = []
-        for workflow in workflows:
-            cursor = collection.find({"clusters":cluster,"workflow":workflow})
-            worst_single_alg_makespan = -1
-            best_single_alg_makespan = -1
+    dfb = {i: 0.0 for i in algorithms}
     
-            for doc in cursor:
-                if len(doc["algorithms"].split(",")) == 1:
-                    if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= doc["makespan"]):
-                        best_single_alg_makespan = doc["makespan"]
-                    if (worst_single_alg_makespan < 0) or (worst_single_alg_makespan <= doc["makespan"]):
-                        worst_single_alg_makespan = doc["makespan"]
+    for workflow in workflows:
+        for cluster in clusters:
+            cursor = collection.find({"clusters":cluster,"workflow":workflow})
+            makespans = {doc["algorithms"]: doc["makespan"] for doc in cursor if  len(doc["algorithms"].split(",")) == 1}
             
-            value = 100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / worst_single_alg_makespan
-            cluster_mat.append(value)
-            print("["+cluster+"]["+workflow+"] " + str(value))
-        
-        degradation_mat.append(cluster_mat)
+            best = min(makespans.values())
+            for algo, makespan in makespans.items():
+                dfb[algo] += 100 * (makespan - best) / best
 
-    generate_plot(np.array(degradation_mat).T, clusters, workflows)
-    print(np.array(degradation_mat).T)
-    print(np.array(degradation_mat))
+
+    dfb = {algo: (value / num_scenarios) for algo, value in dfb.items()}
+
+    for algo, avg_dfb in dfb.items():
+      print("["+algo+"] " + str(avg_dfb))
+
 
 #  #  
 #w #                                    .: <10%
