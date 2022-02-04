@@ -56,7 +56,7 @@ if __name__ == "__main__":
     dfb = {algo: (value / num_scenarios) for algo, value in dfb.items()}
 
     for algo, avg_dfb in dfb.items():
-      print("["+algo+"] " + str(avg_dfb))
+      print("["+algo+"] " + str(round(avg_dfb, 2)) + "%")
 
 
 #  #  
