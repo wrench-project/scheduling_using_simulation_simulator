@@ -44,7 +44,9 @@ if __name__ == "__main__":
     speculative_work_fraction = 1.0
     noise = 0.0
 
+
     algorithms_used = set()
+
 
     results = {}
     results_sequence = {}

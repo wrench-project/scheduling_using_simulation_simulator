@@ -40,77 +40,25 @@ if __name__ == "__main__":
 
     simulation_noise = 0.0
 
-    ### COMPUTING RESULTS BY WORKLOW
-    results_by_workflow = {}
+    results = {}
     for speculative_work_fraction in speculative_work_fractions:
         sys.stderr.write("Processing work fraction " + str(speculative_work_fraction) + "\n")
-        results_by_workflow[speculative_work_fraction] = {}
+        results[speculative_work_fraction] = {}
         for workflow in workflows:
             sys.stderr.write("  Processing workflow " + str(workflow) + "\n")
-            sys.stderr.flush()
-            results_by_workflow[speculative_work_fraction][workflow] = []
-            worst_relative_improvement = 0;
-            num_losses={}
-            for baseline_algo in algorithms:
-                num_losses[baseline_algo] = 0
-                #sys.stderr.write(".")
-                #sys.stderr.flush()
-                for cluster in clusters:
-                    cursor = collection.find({"clusters":cluster,"workflow":workflow})
-                    for doc in cursor:
-                        if (len(doc["algorithms"].split(",")) != 1) and (doc["simulation_noise"] == simulation_noise) and (doc["speculative_work_fraction"] == speculative_work_fraction):
-                            our_makespan = doc["makespan"]
-                        elif doc["algorithms"] == baseline_algo:
-                            baseline_makespan = doc["makespan"]
-                    relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
-                    if relative_improvement < 0:
-                        num_losses[baseline_algo] += 1
-                    worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
-                    results_by_workflow[speculative_work_fraction][workflow].append(relative_improvement)
-            #print("WORST: " + str(worst_relative_improvement))
-            total_losses = sum([num_losses[x] for x in num_losses])
-            total_wins = 9*36  - total_losses
-            sys.stderr.write("  TOTAL LOSS/WIN = " + str(total_losses) + "/" + str(total_wins) + "\n")
-            sys.stderr.write("  MAX LOSS TO ONE ALG = " + str(max(num_losses.values())) + "\n")
-            sys.stderr.write("  BEST ONE ALG = " + max(num_losses , key=num_losses.get))
-            sys.stderr.write("\n")
+            results[speculative_work_fraction][workflow] = {}
+            for cluster in clusters:
+                results[speculative_work_fraction][workflow][cluster] = {}
+                cursor = collection.find({"clusters":cluster,"workflow":workflow})
+                for doc in cursor:
+                    if (len(doc["algorithms"].split(",")) != 1) and (doc["simulation_noise"] == simulation_noise) and (doc["speculative_work_fraction"] == speculative_work_fraction):
+                        results[speculative_work_fraction][workflow][cluster]["us"] = doc["makespan"]
+                    else:
+                        results[speculative_work_fraction][workflow][cluster][doc["algorithms"]] = doc["makespan"]
 
     # Save result dict to a file
-    output_file_name = "improvement_vs_work_fraction_extracted_results_by_workflow.dict"
+    output_file_name = "improvement_vs_work_fraction_extracted_results.dict"
     f = open(output_file_name, "w")
-    f.write(str(results_by_workflow) + "\n")
-    f.close()
-    print("  Result dictionary (used by the plotting script) written to file " + output_file_name)
-
-    ### COMPUTING RESULTS BY CLUSTER
-    results_by_cluster = {}
-    for speculative_work_fraction in speculative_work_fractions:
-        sys.stderr.write("Processing work fraction " + str(speculative_work_fraction) + "\n")
-        results_by_cluster[speculative_work_fraction] = {}
-        for cluster in clusters:
-            sys.stderr.write("  Processing cluster " + str(cluster) + " ")
-            sys.stderr.flush()
-            results_by_cluster[speculative_work_fraction][cluster] = []
-            worst_relative_improvement = 0;
-            for baseline_algo in algorithms:
-                sys.stderr.write(".")
-                sys.stderr.flush()
-                for workflow in workflows:
-                    cursor = collection.find({"clusters":cluster,"workflow":workflow})
-                    for doc in cursor:
-                        if (len(doc["algorithms"].split(",")) != 1) and (doc["simulation_noise"] == simulation_noise) and (doc["speculative_work_fraction"] == speculative_work_fraction):
-                            our_makespan = doc["makespan"]
-                        elif doc["algorithms"] == baseline_algo:
-                            baseline_makespan = doc["makespan"]
-                    relative_improvement = 100.0 * (baseline_makespan - our_makespan) / baseline_makespan
-                    worst_relative_improvement = min(worst_relative_improvement, relative_improvement)
-                    results_by_cluster[speculative_work_fraction][cluster].append(relative_improvement)
-            #print("WORST: " + str(worst_relative_improvement))
-            sys.stderr.write("\n")
-
-    # Save result dict to a file
-    output_file_name = "improvement_vs_work_fraction_extracted_results_by_cluster.dict"
-    f = open(output_file_name, "w")
-    f.write(str(results_by_cluster) + "\n")
+    f.write(str(results) + "\n")
     f.close()
     print("  Result dictionary (used by the plotting script) written to file " + output_file_name)
