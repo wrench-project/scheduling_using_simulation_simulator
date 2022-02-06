@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     results = {}
     for workflow in workflows:
-        sys.stderr.write("\nProcessing workflow " + str(workflow) + " ")
+        sys.stderr.write("Processing workflow " + str(workflow) + "\n")
         results[workflow] = {}
         for cluster in clusters:
             results[workflow][cluster] = {}

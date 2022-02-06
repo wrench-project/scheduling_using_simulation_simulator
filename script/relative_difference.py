@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-import random
-import subprocess
-import glob
-from multiprocessing import Pool
 import sys
-import json
-from pymongo import MongoClient
+import ast
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-import random
 import numpy as np
 
 global collection
@@ -27,7 +21,7 @@ def generate_plot(x):
     plt.figure(figsize=(14, 7))
     plt.grid(axis='y')
 
-    plt.plot(values, y, 'b')
+    plt.plot(values, y, 'b', linewidth=3.0)
     
     #plotting dots to represent algorithm
     i = 0
@@ -36,13 +30,13 @@ def generate_plot(x):
 
     for cluster in dots:
         for algo in cluster:
-            plt.plot(i, algo, 'o', markersize=0.8, color='0.5')
+            plt.plot(i, algo, 'o', markersize=2.0, color='0.5')
         i += 1
 
-    plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize)
+    plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize-3)
     plt.yticks(fontsize=fontsize)
     plt.xlabel("Configurations (Workflow:Platform)",fontsize=fontsize)
-    plt.ylabel("% difference",fontsize=fontsize)
+    plt.ylabel("% makespan difference",fontsize=fontsize)
    
     plt.tight_layout()
 
@@ -56,23 +50,22 @@ def generate_plot(x):
 
 if __name__ == "__main__":
 
-    # Setup Mongo
-    try:
-        mongo_url = "mongodb://localhost"
-        mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
-        mydb = mongo_client["scheduling_with_simulation"]
-        collection = mydb["results"]
-    except:
-        sys.stderr.write("Cannot connect to MONGO\n")
-        sys.exit(1)
 
-    # Get values for fieds
-    algorithms = set()
-    cursor = collection.find()
-    for doc in cursor:
-        if len(doc["algorithms"].split(",")) == 1:
-            algorithms.add(doc["algorithms"])
-    algorithms = sorted(list(algorithms))
+    # Read already extracted results from the data file
+    try:
+        input_file_name = "improvement_ideal_extracted_results.dict"
+    except OSError:
+        sys.stderr.write("Can't open file 'improvement_ideal_extracted_results.dict'. Start Mongo and Run the improvement_ideal_extract_results.py script first!\n");
+        sys.exit(1)
+        
+    file = open(input_file_name, "r")
+    contents = file.read()
+    results = ast.literal_eval(contents)
+
+    workflows = sorted(list(results.keys()))
+    clusters = sorted(list(results[workflows[0]].keys()))
+    algorithms = sorted(list(results[workflows[0]][clusters[0]].keys()))
+    algorithms.remove("us")
 
     workflow_id_map = {}
     workflow_id_map['montage-chameleon-2mass-10d-001.json'] = "1"
@@ -103,16 +96,16 @@ if __name__ == "__main__":
     for workflow in workflows:
         cluster_mat = []
         for cluster in clusters:
-            cursor = collection.find({"clusters":cluster,"workflow":workflow})
             worst_single_alg_makespan = -1
             best_single_alg_makespan = -1
    
-            for doc in cursor:
-                if len(doc["algorithms"].split(",")) == 1:
-                    if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= doc["makespan"]):
-                        best_single_alg_makespan = doc["makespan"]
-                    if (worst_single_alg_makespan < 0) or (worst_single_alg_makespan <= doc["makespan"]):
-                        worst_single_alg_makespan = doc["makespan"]
+            for algo in algorithms:
+                if algo != "us":
+                    makespan = results[workflow][cluster][algo]
+                    if (best_single_alg_makespan < 0) or (best_single_alg_makespan >= makespan):
+                        best_single_alg_makespan = makespan
+                    if (worst_single_alg_makespan < 0) or (worst_single_alg_makespan <= makespan):
+                        worst_single_alg_makespan = makespan
                 
             # Getting relative best-worst difference value for each workflow-cluster configuration
             config_name = "W"+workflow_id_map[workflow]+":P"+clusters_id_map[cluster]
@@ -120,10 +113,10 @@ if __name__ == "__main__":
             
             # getting the relative difference for each algorithm in each workflow-cluster config
             relative_vals = []
-            cursor.rewind()
-            for doc in cursor:
-              if len(doc["algorithms"].split(",")) == 1:
-                  relative_vals.append(100 * (doc["makespan"] - best_single_alg_makespan) / doc["makespan"])
+            for algo in algorithms:
+                if algo != "us":
+                    makespan = results[workflow][cluster][algo]
+                    relative_vals.append(100 * (makespan - best_single_alg_makespan) / makespan)
             
             percent_diff[config_name] = (percent_diff[config_name], relative_vals)
 

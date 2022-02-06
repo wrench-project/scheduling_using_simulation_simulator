@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# DISERSITY
 
 # IDEAL
 if [ ! -f improvement_ideal_extracted_results.dict ]; then
