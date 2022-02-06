@@ -13,7 +13,7 @@ import numpy as np
 
 global collection
 
-def generate_plot(x, y, dots):
+def generate_plot(x):
     
     fontsize = 14
     
@@ -21,8 +21,9 @@ def generate_plot(x, y, dots):
 
     sys.stderr.write("Generating " + output_file + "...\n")
     
-    values = range(len(x))
-    
+    values = range(len(x.keys()))
+    y = [i[0] for i in x.values()]
+
     plt.figure(figsize=(14, 7))
     plt.grid(axis='y')
 
@@ -30,12 +31,15 @@ def generate_plot(x, y, dots):
     
     #plotting dots to represent algorithm
     i = 0
+
+    dots = [i[1] for i in x.values()]
+
     for cluster in dots:
         for algo in cluster:
             plt.plot(i, algo, 'o', markersize=1, color='0.5')
         i += 1
 
-    plt.xticks(values, x, rotation=90, fontsize=fontsize)
+    plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
     plt.xlabel("Configurations (Workflow:Platform)",fontsize=fontsize)
     plt.ylabel("% difference",fontsize=fontsize)
@@ -94,9 +98,8 @@ if __name__ == "__main__":
    
     clusters = dict(sorted(clusters_id_map.items(), key=lambda item: item[1])).keys()
     
-    percent_diff = []
+    percent_diff = {}
     x_labels = []
-    algo_dots = []
     for workflow in workflows:
         cluster_mat = []
         for cluster in clusters:
@@ -112,18 +115,19 @@ if __name__ == "__main__":
                         worst_single_alg_makespan = doc["makespan"]
                 
             # Getting relative best-worst difference value for each workflow-cluster configuration
-            percent_diff.append(100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / worst_single_alg_makespan)
-            x_labels.append("W"+workflow_id_map[workflow]+":P"+clusters_id_map[cluster])
+            config_name = "W"+workflow_id_map[workflow]+":P"+clusters_id_map[cluster]
+            percent_diff[config_name] = (100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / worst_single_alg_makespan)
             
             # getting the relative difference for each algorithm in each workflow-cluster config
             relative_vals = []
             cursor.rewind()
             for doc in cursor:
               if len(doc["algorithms"].split(",")) == 1:
-                relative_vals.append(100 * (doc["makespan"] - best_single_alg_makespan) / doc["makespan"])
+                  relative_vals.append(100 * (doc["makespan"] - best_single_alg_makespan) / doc["makespan"])
             
-            algo_dots.append(relative_vals)
+            percent_diff[config_name] = (percent_diff[config_name], relative_vals)
 
-    generate_plot(x_labels, percent_diff, algo_dots)
+    percent_diff = dict(sorted(percent_diff.items(), key=lambda item: item[1][0]))
+    generate_plot(percent_diff)
 
     print("Total configurations: " + str(len(clusters) * len(workflows)))
