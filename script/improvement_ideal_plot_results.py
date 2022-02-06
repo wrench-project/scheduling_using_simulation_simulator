@@ -1,9 +1,26 @@
 #!/usr/bin/env python3
 import ast
 import random
+import math
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
+
+
+def plot_violin(axis, position, width, data, color):
+
+    v = axis.violinplot(data, positions=[position], widths=[width], showmeans=True)
+    for pc in v['bodies']:
+        pc.set_facecolor(color)
+        pc.set_facecolor(color)
+        pc.set_edgecolor(color)
+    v['cmaxes'].set_color(color)
+    v['cmaxes'].set_linewidth(2)
+    v['cmins'].set_color(color)
+    v['cbars'].set_color(color)
+    v['cbars'].set_linewidth(1)
+    v['cmeans'].set_color(color)
+    return v
 
 
 if __name__ == "__main__":
@@ -12,7 +29,9 @@ if __name__ == "__main__":
     try:
         input_file_name = "ideal_extracted_results.dict"
     except OSError:
-        sys.stderr.write("Can't open file 'ideal_extracted_results.dict'. Start Mongo and run the ideal_extract_results.py script first!\n");
+        sys.stderr.write("Can't find extracted result file. Start Mongo and run the extract_all_results.py script first!\n");
+        sys.exit(1)
+
 
     file = open(input_file_name, "r")
     contents = file.read()
@@ -32,18 +51,6 @@ if __name__ == "__main__":
     workflow_id_map['srasearch-chameleon-10a-003.json'] = "8"
     workflows = dict(sorted(workflow_id_map.items(), key=lambda item: item[1])).keys()
 
-    clusters_id_map = {}
-    clusters_id_map['96:8:100Gf:100MBps'] = "1"
-    clusters_id_map['48:8:150Gf:100MBps,48:8:50Gf:100MBps'] = "2"
-    clusters_id_map['48:8:400Gf:10MBps,48:8:50Gf:100MBps'] = "3"
-    clusters_id_map['32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps'] = "4"
-    clusters_id_map['32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps'] = "5"
-    clusters_id_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "6"
-    clusters_id_map['32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps'] = "7"
-    clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = "8"
-    clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = "1"
-    clusters = dict(sorted(clusters_id_map.items(), key=lambda item: item[1])).keys()
-
     workflow_color_map = {}
     workflow_color_map['montage-chameleon-2mass-10d-001.json'] = "red"
     workflow_color_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "blue"
@@ -56,7 +63,6 @@ if __name__ == "__main__":
 
 
     ### PLOTTING
-
     fontsize = 18
 
     output_file = "improvement_ideal.pdf"
@@ -66,23 +72,33 @@ if __name__ == "__main__":
     
     ax1.yaxis.grid()
 
-    x_value = 0.1
-    x_ticks = []
-    x_ticklabels = []
-    for workflow in workflows:
-        x_ticks.append(x_value)
-        #x_ticklabels.append(workflow.split('-')[0])
-        x_ticklabels.append("W"+workflow_id_map[workflow])
-        y_to_plot = []
-        for cluster in clusters:
-            y_to_plot.append(results[workflow][cluster][0])
-        x_to_plot = [x_value + random.uniform(-0.02, +0.02) for x in y_to_plot]
-        mean_y = sum(y_to_plot) / len(y_to_plot)
+    violin_width = 0.03
+    algos = ["8"]
+    
+    algo_position_offset = {}
+    violin_width = 0.060 / len(algos)
+    position_increment = violin_width + 0.005
+    starting_position_offset = 0.0 - int(len(algos)/2) * position_increment + (1 - len(algos)%2) * position_increment/2
+    for algo in algos:
+        algo_position_offset[algo] = starting_position_offset
+        starting_position_offset += position_increment
 
-        ax1.plot(x_to_plot,y_to_plot, '.', color=workflow_color_map[workflow], markersize=15)
-        ax1.plot([x_value - 0.025, x_value + 0.025], [mean_y, mean_y], color=workflow_color_map[workflow], linewidth=4)
-        #sys.stderr.write(workflow + ": average=" + str(mean_y) + "\n")
-        x_value += 0.1
+
+    for algo in algos:
+        x_value = 0.1
+        x_ticks = []
+        x_ticklabels = []
+        for workflow in workflows:
+            x_ticks.append(0.1 * float(workflow_id_map[workflow]))
+            x_ticklabels.append("W"+workflow_id_map[workflow])
+            y_to_plot = []
+            for cluster in clusters:
+                algo_makespan = results[workflow][cluster][algo]
+                us_makespan = results[workflow][cluster]["us"][0]
+                relative_improvement = 100.0 * (algo_makespan - us_makespan) / algo_makespan
+                y_to_plot.append(relative_improvement)
+        
+            plot_violin(ax1, 0.1 * float(workflow_id_map[workflow]) + algo_position_offset[algo] , violin_width, y_to_plot, workflow_color_map[workflow])
 
 
     ax1.set_xticks(x_ticks)
@@ -91,7 +107,6 @@ if __name__ == "__main__":
     ax1.set_ylabel("% makespan improvement", fontsize=fontsize)
     ax1.set_xlabel("Workflow", fontsize=fontsize)
 
-    plt.ylim(-3, 20)
     plt.yticks(fontsize=fontsize)
     f.tight_layout()
                 
@@ -99,4 +114,27 @@ if __name__ == "__main__":
     plt.close()
 
     sys.stderr.write("Plot saved to file " + output_file + "\n")
+
+    print("\nWins over the oracle:")
+    num_wins_over_oracle = 0
+    num_wins_over_oracle_by_more_than_1_percent = 0
+    num_wins_over_oracle_by_more_than_5_percent = 0
+    for workflow in workflows:
+        y_to_plot = []
+        for cluster in clusters:
+            oracle_makespan = math.inf
+            for algo in results[workflow][cluster]:
+                if algo == "us":
+                    us_makespan = results[workflow][cluster][algo][0]
+                else:
+                    oracle_makespan = min(oracle_makespan, results[workflow][cluster][algo])
+            if us_makespan < oracle_makespan:
+                num_wins_over_oracle += 1
+            if us_makespan < oracle_makespan*0.95:
+                num_wins_over_oracle_by_more_than_5_percent += 1
+            if us_makespan < oracle_makespan*0.99:
+                num_wins_over_oracle_by_more_than_1_percent += 1
+    print("  Number of wins over the oracle: " + str(num_wins_over_oracle) + " / " + str(len(workflows) * len(clusters)))
+    print("  Number of wins over the oracle by > 1%: " + str(num_wins_over_oracle_by_more_than_1_percent) + " / " + str(len(workflows) * len(clusters)))
+    print("  Number of wins over the oracle by > 5%: " + str(num_wins_over_oracle_by_more_than_5_percent) + " / " + str(len(workflows) * len(clusters)))
 
