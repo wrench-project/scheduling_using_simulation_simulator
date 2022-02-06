@@ -69,7 +69,7 @@ if __name__ == "__main__":
             results[workflow][cluster] = {}
             cursor = collection.find({"clusters":cluster,"workflow":workflow})
             for doc in cursor:
-                if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == 1.0):
+                if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == 0.0):
                     our_makespan = doc["makespan"]
                     algos_used = list(set(doc["algorithm_sequence"].split(",")))
                     results[workflow][cluster]["us"] = [our_makespan, algos_used]

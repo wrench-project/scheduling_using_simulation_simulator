@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # Read already extracted results from the data file
     try:
-        input_file_name = "improvement_ideal_extracted_results.dict"
+        input_file_name = "ideal_extracted_results.dict"
     except OSError:
         sys.stderr.write("Can't open file 'improvement_ideal_extracted_results.dict'. Start Mongo and Run the improvement_ideal_extract_results.py script first!\n");
         sys.exit(1)
