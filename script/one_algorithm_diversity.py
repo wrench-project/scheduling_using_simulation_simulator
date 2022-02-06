@@ -29,14 +29,13 @@ def generate_plot(mat, x_labels, y_labels):
         for j in range(len(x_labels)):
             text = ax.text(j, i, f"{round(mat[i, j], 2)}%", ha="center", va="center", color="r")
 
+    plt.savefig("one_algo_diversity.pdf")
     plt.show()
 
     #TODO: fix spacing issue
     #TODO: add color bar
 		#TODO: change labels
 		# 
-
-    plt.savefig("one_algo_diversity.pdf")
     plt.close()
 
     return

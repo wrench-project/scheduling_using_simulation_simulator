@@ -13,31 +13,39 @@ import numpy as np
 
 global collection
 
-def generate_plot(mat, x_labels, y_labels):
-
-
-    fig, ax = plt.subplots()
-		
-    ax.set_xticks(np.arange(len(x_labels)))
-    ax.set_xlabel(x_labels)
-    ax.set_yticks(np.arange(len(y_labels)))
-    ax.set_ylabel(y_labels)
+def generate_plot(x, y, dots):
     
-    ax.imshow(mat, cmap='hot', interpolation="nearest")
+    fontsize = 14
+    
+    output_file = "relative_difference.pdf"
 
-    for i in range(len(y_labels)):
-        for j in range(len(x_labels)):
-            text = ax.text(j, i, f"{round(mat[i, j], 2)}%", ha="center", va="center", color="r")
+    sys.stderr.write("Generating " + output_file + "...\n")
+    
+    values = range(len(x))
+    
+    plt.figure(figsize=(14, 7))
+    plt.grid(axis='y')
 
-    plt.show()
+    plt.plot(values, y, 'b')
+    
+    #plotting dots to represent algorithm
+    i = 0
+    for cluster in dots:
+        for algo in cluster:
+            plt.plot(i, algo, 'o', markersize=1, color='0.5')
+        i += 1
 
-    #TODO: fix spacing issue
-    #TODO: add color bar
-		#TODO: change labels
-		# 
+    plt.xticks(values, x, rotation=90, fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xlabel("Configurations (Workflow:Platform)",fontsize=fontsize)
+    plt.ylabel("% difference",fontsize=fontsize)
+   
+    plt.tight_layout()
 
-    plt.savefig("one_algo_diversity.pdf")
+    plt.savefig(output_file)
     plt.close()
+    
+    sys.stderr.write("Plot saved to file " + output_file + "\n")
 
     return
 
@@ -55,24 +63,43 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Get values for fieds
-    workflows = set()
-    clusters = set()
     algorithms = set()
     cursor = collection.find()
     for doc in cursor:
-        clusters.add(doc["clusters"])
-        workflows.add(doc["workflow"])
         if len(doc["algorithms"].split(",")) == 1:
             algorithms.add(doc["algorithms"])
-
-    workflows = sorted(list(workflows))
-    clusters = sorted(list(clusters))
     algorithms = sorted(list(algorithms))
-    percent_diff = []
 
-    for cluster in clusters:
+    workflow_id_map = {}
+    workflow_id_map['montage-chameleon-2mass-10d-001.json'] = "1"
+    workflow_id_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = "2"
+    workflow_id_map['bwa-chameleon-large-003.json'] = "3"
+    workflow_id_map['cycles-chameleon-2l-2c-12p-001.json'] = "4"
+    workflow_id_map['1000genome-chameleon-8ch-250k-001.json'] = "5"
+    workflow_id_map['blast-chameleon-medium-002.json'] = "6"
+    workflow_id_map['soykb-chameleon-10fastq-20ch-001.json'] = "7"
+    workflow_id_map['srasearch-chameleon-10a-003.json'] = "8"
+    workflows = dict(sorted(workflow_id_map.items(), key=lambda item: item[1])).keys()
+
+    clusters_id_map = {}
+    clusters_id_map['96:8:100Gf:100MBps'] = "1"
+    clusters_id_map['48:8:150Gf:100MBps,48:8:50Gf:100MBps'] = "2"
+    clusters_id_map['48:8:400Gf:10MBps,48:8:50Gf:100MBps'] = "3"
+    clusters_id_map['32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps'] = "4"
+    clusters_id_map['32:8:100Gf:100MBps,32:8:200Gf:300MBps,32:8:300Gf:200MBps'] = "5"
+    clusters_id_map['32:8:100Gf:200MBps,32:8:200Gf:100MBps,32:8:300Gf:300MBps'] = "6"
+    clusters_id_map['32:8:100Gf:200MBps,32:8:200Gf:300MBps,32:8:300Gf:100MBps'] = "7"
+    clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:200MBps,32:8:300Gf:100MBps'] = "8"
+    clusters_id_map['32:8:100Gf:300MBps,32:8:200Gf:100MBps,32:8:300Gf:200MBps'] = "9"
+   
+    clusters = dict(sorted(clusters_id_map.items(), key=lambda item: item[1])).keys()
+    
+    percent_diff = []
+    x_labels = []
+    algo_dots = []
+    for workflow in workflows:
         cluster_mat = []
-        for workflow in workflows:
+        for cluster in clusters:
             cursor = collection.find({"clusters":cluster,"workflow":workflow})
             worst_single_alg_makespan = -1
             best_single_alg_makespan = -1
@@ -84,28 +111,19 @@ if __name__ == "__main__":
                     if (worst_single_alg_makespan < 0) or (worst_single_alg_makespan <= doc["makespan"]):
                         worst_single_alg_makespan = doc["makespan"]
                 
-            # The thing we are plotting
+            # Getting relative best-worst difference value for each workflow-cluster configuration
             percent_diff.append(100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / worst_single_alg_makespan)
-          
-            relative_val = []
-            # Plotting relative dots
+            x_labels.append("W"+workflow_id_map[workflow]+":P"+clusters_id_map[cluster])
+            
+            # getting the relative difference for each algorithm in each workflow-cluster config
+            relative_vals = []
+            cursor.rewind()
             for doc in cursor:
               if len(doc["algorithms"].split(",")) == 1:
-                relative_val.append(100 * (doc["makespan"] - best_single_alg_makespan) / doc["makespan"])
+                relative_vals.append(100 * (doc["makespan"] - best_single_alg_makespan) / doc["makespan"])
+            
+            algo_dots.append(relative_vals)
 
-            print("["+cluster+"]["+workflow+"] " + str(percent_diff[-1]))
-
+    generate_plot(x_labels, percent_diff, algo_dots)
 
     print("Total configurations: " + str(len(clusters) * len(workflows)))
-
-    # generate_plot(np.array(degradation_mat).T, clusters, workflows)
-
-#  #  
-#w #                                    .: <10%
-#o #                                    *: 10% < <20%
-#r # .
-#k #
-#f #
-#l #
-#  #--------------------------
-#          clusters
