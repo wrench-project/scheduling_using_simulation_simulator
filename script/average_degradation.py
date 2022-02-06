@@ -42,6 +42,7 @@ if __name__ == "__main__":
     num_scenarios = len(workflows) * len(clusters)
 
     dfb = {i: 0.0 for i in algorithms}
+    worst_dfb = {i: 0.0 for i in algorithms}
     
     for workflow in workflows:
         for cluster in clusters:
@@ -50,7 +51,10 @@ if __name__ == "__main__":
             
             best = min(makespans.values())
             for algo, makespan in makespans.items():
-                dfb[algo] += 100 * (makespan - best) / best
+                dfb_value = 100 * (makespan - best) / best
+                dfb[algo] += dfb_value
+                if worst_dfb[algo] < dfb_value:
+                    worst_dfb[algo] = dfb_value
 
 
     dfb = {algo: (value / num_scenarios) for algo, value in dfb.items()}
@@ -58,7 +62,7 @@ if __name__ == "__main__":
     dfb = dict(sorted(dfb.items(),key= lambda x:x[1]))
 
     for algo, avg_dfb in dfb.items():
-      print("["+algo+"] " + str(round(avg_dfb, 2)) + "%")
+        print("["+algo+"] " + str(round(avg_dfb, 2)) + "%  (worst dfb: " + str(round(worst_dfb[algo],2)) + "%)")
 
 
 #  #  
