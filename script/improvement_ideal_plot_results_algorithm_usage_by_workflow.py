@@ -9,7 +9,7 @@ from matplotlib.pyplot import figure
 if __name__ == "__main__":
 
     # Read already extracted results from the data file
-    input_file_name = "improvement_ideal_extracted_results_sequence.dict"
+    input_file_name = "ideal_extracted_results_sequence.dict"
     file = open(input_file_name, "r")
     contents = file.read()
     results = ast.literal_eval(contents)

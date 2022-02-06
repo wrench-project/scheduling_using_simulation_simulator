@@ -9,8 +9,11 @@ from matplotlib.pyplot import figure
 if __name__ == "__main__":
 
     # Read already extracted results from the data file
-    input_file_name = "improvement_ideal_extracted_results_sequence_by_cluster.dict"
-    file = open(input_file_name, "r")
+    input_file_name = "ideal_extracted_results_sequence_by_cluster.dict"
+    try:
+        file = open(input_file_name, "r")
+    except OSError:
+        sys.stderr.write("Can't open file 'ideal_extracted_results.dict'. Start Mongo and run the ideal_extract_results.py script first!\n");
     contents = file.read()
     results = ast.literal_eval(contents)
 

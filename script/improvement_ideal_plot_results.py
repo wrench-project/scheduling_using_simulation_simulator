@@ -9,7 +9,11 @@ from matplotlib.pyplot import figure
 if __name__ == "__main__":
 
     # Read already extracted results from the data file
-    input_file_name = "improvement_ideal_extracted_results.dict"
+    try:
+        input_file_name = "ideal_extracted_results.dict"
+    except OSError:
+        sys.stderr.write("Can't open file 'ideal_extracted_results.dict'. Start Mongo and run the ideal_extract_results.py script first!\n");
+
     file = open(input_file_name, "r")
     contents = file.read()
     results = ast.literal_eval(contents)
