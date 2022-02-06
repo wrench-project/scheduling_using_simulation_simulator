@@ -36,7 +36,7 @@ def generate_plot(x):
 
     for cluster in dots:
         for algo in cluster:
-            plt.plot(i, algo, 'o', markersize=1, color='0.5')
+            plt.plot(i, algo, 'o', markersize=0.8, color='0.5')
         i += 1
 
     plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize)
