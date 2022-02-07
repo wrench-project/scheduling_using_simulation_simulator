@@ -35,7 +35,6 @@ if __name__ == "__main__":
     # Get values for fields in database
     workflows = set()
     clusters = set()
-#    baseline_algorithms = set()
     work_fractions = set()
     noises = set()
     frequencies = set()
@@ -46,12 +45,9 @@ if __name__ == "__main__":
         work_fractions.add(doc["speculative_work_fraction"])
         noises.add(doc["simulation_noise"])
         frequencies.add(doc["periodic_scheduler_change_trigger"])
-#        if len(doc["algorithms"].split(",")) == 1:
-#            baseline_algorithms.add(doc["algorithms"])
 
     workflows = sorted(list(workflows))
     clusters = sorted(list(clusters))
-#    base_line_algorithms = sorted(list(algorithms))
     work_fractions = sorted(list(work_fractions))
     frequencies = sorted(list(frequencies))
     noises = sorted(list(noises))
@@ -123,6 +119,36 @@ if __name__ == "__main__":
                         results[noise][workflow][cluster][doc["algorithms"]] = doc["makespan"]
                 results[noise][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
     write_results_to_file("noise_extracted_results.dict", results)
+
+
+    ##
+    ## RESULTS FOR FREQUENCY
+    ##
+    sys.stderr.write("Extracting 'frequency' results...\n")
+    results = {}
+    noise = 0.2
+    for frequency in frequencies:
+        sys.stderr.write("\tProcessing frequency " + str(frequency) + "\n")
+        results[frequency] = {}
+        for workflow in workflows:
+            results[frequency][workflow] = {}
+            for cluster in clusters:
+                results[frequency][workflow][cluster] = {}
+                cursor = collection.find({"clusters":cluster,"workflow":workflow})
+                sum_us_makespans = 0
+                num_us_makespans = 0
+                for doc in cursor:
+                    if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["periodic_scheduler_change_trigger"] == frequency) and (doc["simulation_noise"] == noise):
+                        sum_us_makespans += doc["makespan"]
+                        num_us_makespans += 1
+                    elif len(doc["algorithms"].split(",")) == 1:
+                        results[frequency][workflow][cluster][doc["algorithms"]] = doc["makespan"]
+                if num_us_makespans > 0:
+                    results[frequency][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
+                else:
+                    results[frequency][workflow][cluster]["us"] = -1.0
+
+    write_results_to_file("frequency_extracted_results.dict", results)
 
 
 
