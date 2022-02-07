@@ -1,54 +1,40 @@
 #!/usr/bin/env python3
-import random
-import subprocess
-import glob
-from multiprocessing import Pool
 import sys
-import json
-from pymongo import MongoClient
+import ast
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-import random
-import numpy as np
 
 global collection
 
 if __name__ == "__main__":
 
-    # Setup Mongo
+
+    # Read already extracted results from the data file
     try:
-        mongo_url = "mongodb://localhost"
-        mongo_client = MongoClient(host=mongo_url, serverSelectionTimeoutMS=1000)
-        mydb = mongo_client["scheduling_with_simulation"]
-        collection = mydb["results"]
-    except:
-        sys.stderr.write("Cannot connect to MONGO\n")
+        input_file_name = "ideal_extracted_results.dict"
+    except OSError:
+        sys.stderr.write("Can't find extracted result file. Start Mongo and run the extract_all_results.py script first!\n");
         sys.exit(1)
-
+        
+    file = open(input_file_name, "r")
+    contents = file.read()
+    results = ast.literal_eval(contents)
+    
     # Get values for fieds
-    workflows = set()
-    clusters = set()
-    algorithms = set()
-    cursor = collection.find()
-    for doc in cursor:
-        clusters.add(doc["clusters"])
-        workflows.add(doc["workflow"])
-        if len(doc["algorithms"].split(",")) == 1:
-            algorithms.add(doc["algorithms"])
-
-    workflows = sorted(list(workflows))
-    clusters = sorted(list(clusters))
-    algorithms = sorted(list(algorithms), key=int)
+    workflows = sorted(list(results.keys()))
+    clusters = sorted(results[workflows[0]].keys())
+    algorithms = sorted(list(results[workflows[0]][clusters[0]].keys()))
+    algorithms.remove("us")
     num_scenarios = len(workflows) * len(clusters)
+
+    print(algorithms)
 
     dfb = {i: 0.0 for i in algorithms}
     worst_dfb = {i: 0.0 for i in algorithms}
     
     for workflow in workflows:
         for cluster in clusters:
-            cursor = collection.find({"clusters":cluster,"workflow":workflow})
-            makespans = {doc["algorithms"]: doc["makespan"] for doc in cursor if  len(doc["algorithms"].split(",")) == 1}
-            
+            makespans = {algo: results[workflow][cluster][algo] for algo in algorithms} 
             best = min(makespans.values())
             for algo, makespan in makespans.items():
                 dfb_value = 100 * (makespan - best) / best
