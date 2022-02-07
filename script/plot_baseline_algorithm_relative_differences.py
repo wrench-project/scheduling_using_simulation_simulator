@@ -3,7 +3,6 @@ import sys
 import ast
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-import numpy as np
 
 global collection
 
