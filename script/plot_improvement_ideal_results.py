@@ -28,12 +28,12 @@ if __name__ == "__main__":
     # Read already extracted results from the data file
     try:
         input_file_name = "ideal_extracted_results.dict"
+        file = open(input_file_name, "r")
     except OSError:
         sys.stderr.write("Can't find extracted result file. Start Mongo and run the extract_all_results.py script first!\n");
         sys.exit(1)
 
 
-    file = open(input_file_name, "r")
     contents = file.read()
     results = ast.literal_eval(contents)
 
