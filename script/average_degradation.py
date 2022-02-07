@@ -27,8 +27,6 @@ if __name__ == "__main__":
     algorithms.remove("us")
     num_scenarios = len(workflows) * len(clusters)
 
-    print(algorithms)
-
     dfb = {i: 0.0 for i in algorithms}
     worst_dfb = {i: 0.0 for i in algorithms}
     

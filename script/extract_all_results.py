@@ -73,7 +73,7 @@ if __name__ == "__main__":
                     our_makespan = doc["makespan"]
                     algos_used = list(set(doc["algorithm_sequence"].split(",")))
                     results[workflow][cluster]["us"] = [our_makespan, algos_used]
-                else:
+                elif len(doc["algorithms"].split(",")) == 1:
                     results[workflow][cluster][doc["algorithms"]] = doc["makespan"]
 
     write_results_to_file("ideal_extracted_results.dict", results)
@@ -95,7 +95,7 @@ if __name__ == "__main__":
                 for doc in cursor:
                     if (len(doc["algorithms"].split(",")) != 1) and (doc["simulation_noise"] == 0.0) and (doc["speculative_work_fraction"] == work_fraction):
                         results[work_fraction][workflow][cluster]["us"] = [doc["makespan"], doc["algorithms"].split(",")]
-                    else:
+                    elif len(doc["algorithms"].split(",")) == 1:
                         results[work_fraction][workflow][cluster][doc["algorithms"]] = doc["makespan"]
 
     write_results_to_file("work_fraction_extracted_results.dict", results)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                     if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == noise):
                         sum_us_makespans += doc["makespan"]
                         num_us_makespans += 1
-                    else:
+                    elif len(doc["algorithms"].split(",")) == 1:
                         results[noise][workflow][cluster][doc["algorithms"]] = doc["makespan"]
                 results[noise][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
     write_results_to_file("noise_extracted_results.dict", results)
