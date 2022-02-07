@@ -11,22 +11,8 @@ fi
 ./plot_improvement_ideal_results.py
 
 # WORK FRACTION BY WORKFLOW
-./improvement_vs_work_fraction_plot_results.py by_workflow
+./plot_improvement_vs_work_fraction_results.py
 
 # NOISE BY WORKFLOW
-./improvement_vs_noise_plot_results.py by_workflow
-
-# FREQUENCY BY WORKFLOW
-./improvement_vs_frequency_extract_results.py
-
-noises=("0.0" "0.1" "0.2" "0.4" "0.8")
-for noise in ${noises[@]}; do
-    ./improvement_vs_frequency_plot_results.py $noise
-done
-
-
-
-
-
-
+./plot_improvement_vs_noise_results.py
 

@@ -126,34 +126,3 @@ if __name__ == "__main__":
 
 
 
-    ##
-    ## RESULTS FOR NOISE AND FREQUENCIES
-    ##
-    sys.stderr.write("Extracting 'frequency and noise' results...\n")
-    results = {}
-    for noise in noises:
-        sys.stderr.write("\tProcessing noise " + str(noise) + "\n")
-        results[noise] = {}
-        for frequency in frequencies:
-            sys.stderr.write("\t\tProcessing frequency " + str(frequency) + "\n")
-            results[noise][frequency] = {}
-            for workflow in workflows:
-                sys.stderr.flush()
-                results[noise][frequency][workflow] = {}
-                for cluster in clusters:
-                    cursor = collection.find({"clusters":cluster,"workflow":workflow})
-                    sum_us_makespans = 0
-                    num_us_makespans = 0
-                    for doc in cursor:
-                        if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == noise) and (doc["periodic_scheduler_change_trigger"] == frequency):
-                            sum_us_makespans += doc["makespan"]
-                            num_us_makespans += 1
-                        else:
-                            results[noise][frequency][workflow][doc["algorithms"]] = doc["makespan"]
-                    if num_us_makespans > 0:
-                        results[noise][frequency][workflow]["us"] = sum_us_makespans / num_us_makespans
-                    else:
-                        results[noise][frequency][workflow]["us"] = -1.0
-
-    write_results_to_file("frequency_noise_extracted_results.dict", results)
-
