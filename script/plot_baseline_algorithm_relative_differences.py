@@ -9,7 +9,7 @@ global collection
 
 def generate_plot(x):
     
-    fontsize = 14
+    fontsize = 18
     
     output_file = "relative_difference.pdf"
 
@@ -30,10 +30,10 @@ def generate_plot(x):
 
     for cluster in dots:
         for algo in cluster:
-            plt.plot(i, algo, 'o', markersize=2.0, color='0.5')
+            plt.plot(i, algo, 'o', markersize=2.5, color='0.4')
         i += 1
 
-    plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize-3)
+    plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize-5)
     plt.yticks(fontsize=fontsize)
     plt.xlabel("Configurations (Workflow:Platform)",fontsize=fontsize)
     plt.ylabel("% makespan difference",fontsize=fontsize)
