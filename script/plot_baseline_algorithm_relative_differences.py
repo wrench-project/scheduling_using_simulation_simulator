@@ -32,8 +32,11 @@ def generate_plot(x):
 
     dots = [i[1] for i in x.values()]
     for cluster in dots:
-        for algo in cluster:
-            plt.plot(i, max(0.1, algo), 'o', markersize=2.5, color='0.4')
+        for algo, diff in cluster.items():
+            if algo != "8":
+                plt.plot(i, max(0.1, diff), 'o', markersize=1.5, color='0.4')
+            else:
+                plt.plot(i, max(0.1, diff), "o", markersize=3, color='r')
         i += 1
 
     plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize-5)
@@ -119,11 +122,11 @@ if __name__ == "__main__":
             percent_diff[config_name] = (100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / best_single_alg_makespan)
             
             # getting the relative difference for each algorithm in each workflow-cluster config
-            relative_vals = []
+            relative_vals = {}
             for algo in algorithms:
                 if algo != "us":
                     makespan = results[workflow][cluster][algo]
-                    relative_vals.append(100 * (makespan - best_single_alg_makespan) / best_single_alg_makespan)
+                    relative_vals[algo] = (100 * (makespan - best_single_alg_makespan) / best_single_alg_makespan)
 
             percent_diff[config_name] = (percent_diff[config_name], relative_vals)
 
