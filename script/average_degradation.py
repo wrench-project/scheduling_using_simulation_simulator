@@ -36,17 +36,18 @@ if __name__ == "__main__":
             best = min(makespans.values())
             for algo, makespan in makespans.items():
                 dfb_value = 100 * (makespan - best) / best
+                if algo == "8":
+                    print(dfb_value)
                 dfb[algo] += dfb_value
                 if worst_dfb[algo] < dfb_value:
                     worst_dfb[algo] = dfb_value
 
-
     dfb = {algo: (value / num_scenarios) for algo, value in dfb.items()}
 
-    dfb = dict(sorted(dfb.items(),key= lambda x:x[1]))
+    dfb = dict(sorted(dfb.items(), key=lambda x: x[1]))
 
     for algo, avg_dfb in dfb.items():
-        print("["+algo+"] " + str(round(avg_dfb, 2)) + "%  (worst dfb: " + str(round(worst_dfb[algo],2)) + "%)")
+        print("["+algo+"] " + str(round(avg_dfb, 2)) + "%  (worst dfb: " + str(round(worst_dfb[algo], 2)) + "%)")
 
 
 #  #  

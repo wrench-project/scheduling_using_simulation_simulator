@@ -7,18 +7,23 @@ from matplotlib.pyplot import figure
 global collection
 
 def generate_plot(x):
-    
+
     fontsize = 18
-    
+
     output_file = "relative_difference.pdf"
 
     sys.stderr.write("Generating " + output_file + "...\n")
-    
+
     values = range(len(x.keys()))
     y = [i[0] for i in x.values()]
+    y = [max(d, 0.1) for d in y]
 
-    plt.figure(figsize=(14, 7))
+    # f, ax = plt.figure(figsize=(14, 7))
+    f, ax = plt.subplots(1, 1, sharey=True, figsize=(14,7))
+
     plt.grid(axis='y')
+
+    plt.yscale("log")
 
     plt.plot(values, y, 'b', linewidth=3.0)
     
@@ -26,10 +31,9 @@ def generate_plot(x):
     i = 0
 
     dots = [i[1] for i in x.values()]
-
     for cluster in dots:
         for algo in cluster:
-            plt.plot(i, algo, 'o', markersize=2.5, color='0.4')
+            plt.plot(i, max(0.1, algo), 'o', markersize=2.5, color='0.4')
         i += 1
 
     plt.xticks(values, x.keys(), rotation=90, fontsize=fontsize-5)
@@ -38,6 +42,10 @@ def generate_plot(x):
     plt.ylabel("% makespan difference",fontsize=fontsize)
    
     plt.tight_layout()
+
+    ax.set_ylim(0.095, 1000)
+    ax.set_yticks([0.1, 1, 10, 100, 1000])
+    ax.set_yticklabels(["$\leq 0.1$", 1, 10, 100, 1000])
 
     plt.savefig(output_file)
     plt.close()
@@ -105,18 +113,18 @@ if __name__ == "__main__":
                         best_single_alg_makespan = makespan
                     if (worst_single_alg_makespan < 0) or (worst_single_alg_makespan <= makespan):
                         worst_single_alg_makespan = makespan
-                
+
             # Getting relative best-worst difference value for each workflow-cluster configuration
             config_name = "W"+workflow_id_map[workflow]+":P"+clusters_id_map[cluster]
-            percent_diff[config_name] = (100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / worst_single_alg_makespan)
+            percent_diff[config_name] = (100.0 * (worst_single_alg_makespan - best_single_alg_makespan) / best_single_alg_makespan)
             
             # getting the relative difference for each algorithm in each workflow-cluster config
             relative_vals = []
             for algo in algorithms:
                 if algo != "us":
                     makespan = results[workflow][cluster][algo]
-                    relative_vals.append(100 * (makespan - best_single_alg_makespan) / makespan)
-            
+                    relative_vals.append(100 * (makespan - best_single_alg_makespan) / best_single_alg_makespan)
+
             percent_diff[config_name] = (percent_diff[config_name], relative_vals)
 
     percent_diff = dict(sorted(percent_diff.items(), key=lambda item: item[1][0]))

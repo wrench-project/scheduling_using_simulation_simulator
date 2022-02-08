@@ -145,6 +145,7 @@ if __name__ == "__main__":
                         results[frequency][workflow][cluster][doc["algorithms"]] = doc["makespan"]
                 if num_us_makespans > 0:
                     results[frequency][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
+                    print("NUM: "  + str(num_us_makespans))
                 else:
                     results[frequency][workflow][cluster]["us"] = -1.0
 

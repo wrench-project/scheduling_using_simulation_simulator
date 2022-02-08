@@ -35,14 +35,22 @@ if __name__ == "__main__":
     results = ast.literal_eval(contents)
 
     frequencies = sorted(list(results.keys()))
+    frequencies = [0.1, 0.2]
+
     workflows = sorted(list(results[frequencies[0]].keys()))
     workflows.remove("seismology-chameleon-700p-001.json")
+
     clusters = list(results[frequencies[0]][workflows[0]].keys())
+    clusters = ["32:8:100Gf:100MBps,32:8:200Gf:200MBps,32:8:300Gf:300MBps"]
+
+
 
     algo = "8"
 
+    analysis = {}
     for workflow in workflows:
         sys.stderr.write("Workflow " + workflow + ":\n")
+        analysis[workflow] = {}
         for cluster in clusters:
             for frequency in frequencies:
                 alg_makespan = results[frequency][workflow][cluster][algo]
@@ -50,6 +58,11 @@ if __name__ == "__main__":
                 if us_makespan < 0:
                     break
                 improvement = 100.0*(alg_makespan - us_makespan) / alg_makespan
+                analysis[workflow][frequency] = improvement
                 sys.stderr.write("  freq=" + str(frequency) + ": " + str(improvement) + "\n")
+
+    for workflow in analysis:
+        print(workflow + ": " + str(analysis[workflow][0.1] - analysis[workflow][0.2]))
+
                 
 
