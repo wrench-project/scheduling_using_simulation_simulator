@@ -209,6 +209,7 @@ if __name__ == "__main__":
     ax2.set_xticklabels(speculative_work_fractions, fontsize=fontsize)
     ax2.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize - 1)
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
+    plt.xlabel("Work fraction simulated " + r"($\beta$)", fontsize=fontsize)
 
     plt.tight_layout()
 

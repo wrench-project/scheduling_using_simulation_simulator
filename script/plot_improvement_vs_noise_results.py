@@ -207,7 +207,7 @@ if __name__ == "__main__":
     ax2.set_xticks(xticks)
     ax2.set_xticklabels(noises, fontsize=fontsize)
     #ax2.set_yticklabels(["-100", "-50", "0", "50", "100"], fontsize=fontsize - 1)
-    ax2.set_xlabel("Simulation error range", fontsize=fontsize)
+    ax2.set_xlabel("Simulation error range " + r"($e$)", fontsize=fontsize)
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
 
     plt.tight_layout()
