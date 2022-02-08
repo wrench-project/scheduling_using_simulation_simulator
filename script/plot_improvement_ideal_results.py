@@ -5,22 +5,26 @@ import math
 import sys
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 
-def plot_violin(axis, position, width, data, color):
+def plot_data(axis, position, width, data, color):
 
-    v = axis.violinplot(data, positions=[position], widths=[width], showmeans=True)
-    for pc in v['bodies']:
-        pc.set_facecolor(color)
-        pc.set_facecolor(color)
-        pc.set_edgecolor(color)
-    v['cmaxes'].set_color(color)
-    v['cmaxes'].set_linewidth(2)
-    v['cmins'].set_color(color)
-    v['cbars'].set_color(color)
-    v['cbars'].set_linewidth(1)
-    v['cmeans'].set_color(color)
-    return v
+    spread = [-width + x * 2 * width/len(data) for x in range(0, len(data))]
+    random.shuffle(spread)
+    idx = 0
+    for imp, best in data:
+        if best:
+            marker = 'v'
+        else:
+            marker = 'o'
+
+        axis.plot([position + spread[idx]], [imp], marker=marker, color=color, markersize=8)
+        idx += 1
+
+    average = sum([x[0] for x in data]) / len(data)
+    axis.plot([position - width, position + width], [average, average], '-', linewidth=2, color=color)
 
 
 if __name__ == "__main__":
@@ -69,37 +73,35 @@ if __name__ == "__main__":
     sys.stderr.write("Generating " + output_file + "...\n")
 
     f, ax1 = plt.subplots(1, 1, sharey=True, figsize=(12,6))
-    
+
     ax1.yaxis.grid()
 
-    violin_width = 0.03
-    algos = ["8"]
-    
-    algo_position_offset = {}
-    violin_width = 0.060 / len(algos)
-    position_increment = violin_width + 0.005
-    starting_position_offset = 0.0 - int(len(algos)/2) * position_increment + (1 - len(algos)%2) * position_increment/2
-    for algo in algos:
-        algo_position_offset[algo] = starting_position_offset
-        starting_position_offset += position_increment
+    baseline_algo = "8"
+    algos = [str(x) for x in range(0, 36)]
 
+    display_width = 0.027
 
-    for algo in algos:
-        x_value = 0.1
-        x_ticks = []
-        x_ticklabels = []
-        for workflow in workflows:
-            x_ticks.append(0.1 * float(workflow_id_map[workflow]))
-            x_ticklabels.append("W"+workflow_id_map[workflow])
-            y_to_plot = []
-            for cluster in clusters:
-                algo_makespan = results[workflow][cluster][algo]
-                us_makespan = results[workflow][cluster]["us"][0]
-                relative_improvement = 100.0 * (algo_makespan - us_makespan) / algo_makespan
-                y_to_plot.append(relative_improvement)
-        
-            plot_violin(ax1, 0.1 * float(workflow_id_map[workflow]) + algo_position_offset[algo] , violin_width, y_to_plot, workflow_color_map[workflow])
+    handles = []
+    x_value = 0.1
+    x_ticks = []
+    x_ticklabels = []
+    for workflow in workflows:
+        x_ticks.append(0.1 * float(workflow_id_map[workflow]))
+        x_ticklabels.append("W"+workflow_id_map[workflow])
+        y_to_plot = []
+        for cluster in clusters:
+            baseline_makespan = results[workflow][cluster][baseline_algo]
+            us_makespan = results[workflow][cluster]["us"][0]
+            baseline_algo_is_best_one_algo = True
+            for algo in algos:
+                if results[workflow][cluster][algo] < 0.99 * baseline_makespan:
+                    baseline_algo_is_best_one_algo = False
+                    break
+            relative_improvement = 100.0 * (baseline_makespan - us_makespan) / baseline_makespan
+            y_to_plot.append([relative_improvement, baseline_algo_is_best_one_algo])
 
+        handles.append(plot_data(ax1, 0.1 * float(workflow_id_map[workflow]),
+                                 display_width, y_to_plot, workflow_color_map[workflow]))
 
     ax1.set_xticks(x_ticks)
     ax1.set_xticklabels(x_ticklabels, rotation=45, fontsize=fontsize)
@@ -107,9 +109,24 @@ if __name__ == "__main__":
     ax1.set_ylabel("% makespan improvement", fontsize=fontsize)
     ax1.set_xlabel("Workflow", fontsize=fontsize)
 
+    legend_elements = []
+    legend_elements.append(Line2D([0], [0], marker='o', color='k', label='was not best one-algorithm solution',
+                                  markerfacecolor='k', markersize=8, linewidth=0))
+    legend_elements.append(Line2D([0], [0], marker='v', color='k', label='was best one-algorithm solution',
+                                  markerfacecolor='k', markersize=8, linewidth=0))
+    legend_elements.append(Line2D([0], [0], color='k', lw=2, label='average improvement'))
+
+    # Create the figure
+    ax1.legend(handles=legend_elements, loc='upper center', fontsize=fontsize-2)
+
+    # ax1.legend(handles,
+    #            ["W" + workflow_id_map[x] for x in workflows], loc=3,
+    #            fontsize=fontsize - 1, ncol=2)
+
+
     plt.yticks(fontsize=fontsize)
     f.tight_layout()
-                
+
     plt.savefig(output_file)
     plt.close()
 
