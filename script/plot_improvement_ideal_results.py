@@ -109,20 +109,14 @@ if __name__ == "__main__":
     ax1.set_ylabel("% makespan improvement", fontsize=fontsize)
     ax1.set_xlabel("Workflow", fontsize=fontsize)
 
-    legend_elements = []
-    legend_elements.append(Line2D([0], [0], marker='o', color='k', label='was not best one-algorithm solution',
-                                  markerfacecolor='k', markersize=8, linewidth=0))
-    legend_elements.append(Line2D([0], [0], marker='v', color='k', label='was best one-algorithm solution',
-                                  markerfacecolor='k', markersize=8, linewidth=0))
-    legend_elements.append(Line2D([0], [0], color='k', lw=2, label='average improvement'))
+    legend_elements = [Line2D([0], [0], marker='o', color='k', label='was not best one-algorithm solution',
+                              markerfacecolor='k', markersize=8, linewidth=0),
+                       Line2D([0], [0], marker='v', color='k', label='was best one-algorithm solution',
+                              markerfacecolor='k', markersize=8, linewidth=0),
+                       Line2D([0], [0], color='k', lw=2, label='average improvement')]
 
     # Create the figure
     ax1.legend(handles=legend_elements, loc='upper center', fontsize=fontsize-2)
-
-    # ax1.legend(handles,
-    #            ["W" + workflow_id_map[x] for x in workflows], loc=3,
-    #            fontsize=fontsize - 1, ncol=2)
-
 
     plt.yticks(fontsize=fontsize)
     f.tight_layout()
@@ -154,4 +148,29 @@ if __name__ == "__main__":
     print("  Number of wins over the oracle: " + str(num_wins_over_oracle) + " / " + str(len(workflows) * len(clusters)))
     print("  Number of wins over the oracle by > 1%: " + str(num_wins_over_oracle_by_more_than_1_percent) + " / " + str(len(workflows) * len(clusters)))
     print("  Number of wins over the oracle by > 5%: " + str(num_wins_over_oracle_by_more_than_5_percent) + " / " + str(len(workflows) * len(clusters)))
+
+    print("\nAlgorithm usage:")
+    algo_usage = {str(x):0 for x in range(0,36)}
+    num_usages = []
+    num_scenarios_one_algo = 0
+    for workflow in workflows:
+        for cluster in clusters:
+            for algo in results[workflow][cluster]:
+                if algo == "us":
+                    used_algorithms = list(set(results[workflow][cluster][algo][1]))
+                    num_usages.append(len(used_algorithms))
+                    for a in used_algorithms:
+                        algo_usage[a] += 1
+                    if len(used_algorithms) == 1:
+                        num_scenarios_one_algo += 1
+
+    print("Number of scenarios when our approach uses a single algorithm: " + str(num_scenarios_one_algo))
+    print("Number of algorithms used at least once: " + str(len([x for x in algo_usage if algo_usage[x] > 0])))
+    print("Number of algorithms never used: " + str(len([x for x in algo_usage if algo_usage[x] == 0])))
+    print("Maximum number of different algorithms used by approach: " + str(max(num_usages)))
+    print("Average number of different algorithms used by approach: " + str(sum(num_usages)/len(num_usages)))
+    print("Algorithm usage: ")
+    for x in algo_usage:
+        print("   " + x + ": " + str(algo_usage[x]))
+
 
