@@ -90,7 +90,6 @@ if __name__ == "__main__":
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5]
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(noises, fontsize=fontsize)
-    #ax1.set_yticklabels(["-100", "-50", "0", "50", "100"], fontsize=fontsize-1)
     ax1.set_xlabel("Simulation error range", fontsize=fontsize)
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
 
@@ -201,10 +200,10 @@ if __name__ == "__main__":
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5]
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(noises, fontsize=fontsize)
-    #ax1.set_yticklabels(["-100", "-50", "0", "50", "100"], fontsize=fontsize - 1)
+    ax1.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize - 1)
     ax2.set_xticks(xticks)
     ax2.set_xticklabels(noises, fontsize=fontsize)
-    #ax2.set_yticklabels(["-100", "-50", "0", "50", "100"], fontsize=fontsize - 1)
+    ax2.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize - 1)
     ax2.set_xlabel("Simulation error range " + r"($e$)", fontsize=fontsize)
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
 

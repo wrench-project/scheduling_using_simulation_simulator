@@ -92,7 +92,7 @@ if __name__ == "__main__":
     xticks = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
     ax1.set_xticks(xticks)
     ax1.set_xticklabels(speculative_work_fractions, fontsize=fontsize)
-    ax1.set_yticklabels(["  -150", "-100", "-50", "0", "50", "100", "150"], fontsize=fontsize-1)
+    #ax1.set_yticklabels(fontsize=fontsize-1)
     f.text(0.00, 0.5, '% makespan improvement', fontsize=fontsize, va='center', rotation='vertical')
 
     plt.tight_layout()
