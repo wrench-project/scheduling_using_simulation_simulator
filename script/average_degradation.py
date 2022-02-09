@@ -36,8 +36,6 @@ if __name__ == "__main__":
             best = min(makespans.values())
             for algo, makespan in makespans.items():
                 dfb_value = 100 * (makespan - best) / best
-                if algo == "8":
-                    print(dfb_value)
                 dfb[algo] += dfb_value
                 if worst_dfb[algo] < dfb_value:
                     worst_dfb[algo] = dfb_value

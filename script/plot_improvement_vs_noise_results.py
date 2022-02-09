@@ -78,7 +78,9 @@ if __name__ == "__main__":
                 for cluster in clusters:
                     alg_makespan = results[noise][workflow][cluster][alg]
                     us_makespan = results[noise][workflow][cluster]["us"]
-                    violin_data.append(100.0*(alg_makespan - us_makespan) / alg_makespan)
+                    #violin_data.append(100.0*(alg_makespan - us_makespan) / alg_makespan)
+                    for ms in us_makespan:
+                        violin_data.append(100.0*(alg_makespan - ms) / alg_makespan)
 
             position = xticks_mapping[noise] + algo_position_offset[alg]
             violin = plot_violin(ax1, position, violin_width, violin_data, algo_color_map[alg])
@@ -180,8 +182,11 @@ if __name__ == "__main__":
             violin_data = []
             for cluster in clusters:
                 alg_makespan = results[noise][workflow][cluster][alg]
-                us_makespan = results[noise][workflow][cluster]["us"]
-                violin_data.append(100.0 * (alg_makespan - us_makespan) / alg_makespan)
+                #us_makespan = results[noise][workflow][cluster]["us"]
+                us_makespans = results[noise][workflow][cluster]["us"]
+                #violin_data.append(100.0 * (alg_makespan - us_makespan) / alg_makespan)
+                for ms in us_makespans:
+                    violin_data.append(100.0 * (alg_makespan - ms) / alg_makespan)
             
             offset = workflow_offset[workflow]
             if workflow_top_or_bottom[workflow] == "top":

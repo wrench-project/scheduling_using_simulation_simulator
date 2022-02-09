@@ -109,15 +109,18 @@ if __name__ == "__main__":
             for cluster in clusters:
                 results[noise][workflow][cluster] = {}
                 cursor = collection.find({"clusters":cluster,"workflow":workflow})
-                sum_us_makespans = 0
-                num_us_makespans = 0
+                us_makespans = []
+#                sum_us_makespans = 0
+#                num_us_makespans = 0
                 for doc in cursor:
                     if (len(doc["algorithms"].split(",")) != 1) and (doc["speculative_work_fraction"] == 1.0) and (doc["simulation_noise"] == noise):
-                        sum_us_makespans += doc["makespan"]
-                        num_us_makespans += 1
+#                        sum_us_makespans += doc["makespan"]
+#                        num_us_makespans += 1
+                        us_makespans.append(doc["makespan"])
                     elif len(doc["algorithms"].split(",")) == 1:
                         results[noise][workflow][cluster][doc["algorithms"]] = doc["makespan"]
-                results[noise][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
+#                results[noise][workflow][cluster]["us"] = sum_us_makespans / num_us_makespans
+                results[noise][workflow][cluster]["us"] = us_makespans
     write_results_to_file("noise_extracted_results.dict", results)
 
 
