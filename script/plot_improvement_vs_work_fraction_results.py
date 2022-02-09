@@ -74,7 +74,6 @@ if __name__ == "__main__":
 
     violins = []
     for swf in speculative_work_fractions:
-        print("SWF: " + str(swf))
         for alg in algos:
             violin_data = []
             for workflow in workflows:
@@ -179,7 +178,6 @@ if __name__ == "__main__":
     top_violins = []
     bottom_violins = []
     for swf in speculative_work_fractions:
-        print("SWF: " + str(swf))
         for workflow in workflows:
             violin_data = []
             for cluster in clusters:

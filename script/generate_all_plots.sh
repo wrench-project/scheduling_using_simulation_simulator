@@ -1,6 +1,7 @@
 #!/bin/bash
 
-if [ ! -f ideal_extracted_results.dict ] || [ ! -f work_fraction_extracted_results.dict ] || [ ! -f noise_extracted_results.dict.dict ] || [ ! -f frequency_noise_extracted_results.dict ]; then
+
+if [ ! -f ideal_extracted_results.dict ] || [ ! -f work_fraction_extracted_results.dict ] || [ ! -f noise_extracted_results.dict ]; then
     ./extract_all_results.py
 fi
 
@@ -15,4 +16,5 @@ fi
 
 # NOISE BY WORKFLOW
 ./plot_improvement_vs_noise_results.py
+
 

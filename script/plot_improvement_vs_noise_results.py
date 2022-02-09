@@ -72,7 +72,6 @@ if __name__ == "__main__":
 
     violins = []
     for noise in noises:
-        print("NOISE: " + str(noise))
         for alg in algos:
             violin_data = []
             for workflow in workflows:
@@ -178,7 +177,6 @@ if __name__ == "__main__":
     top_violins = []
     bottom_violins = []
     for noise in noises:
-        print("NOISE: " + str(noise))
         for workflow in workflows:
             violin_data = []
             for cluster in clusters:
