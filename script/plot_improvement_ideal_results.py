@@ -150,7 +150,7 @@ if __name__ == "__main__":
     print("  Number of wins over the oracle by > 5%: " + str(num_wins_over_oracle_by_more_than_5_percent) + " / " + str(len(workflows) * len(clusters)))
 
     print("\nAlgorithm usage:")
-    algo_usage = {str(x):0 for x in range(0,36)}
+    algo_usage = {str(x): 0 for x in range(0,36)}
     num_usages = []
     num_scenarios_one_algo = 0
     for workflow in workflows:
