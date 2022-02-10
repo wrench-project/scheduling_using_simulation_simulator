@@ -5,19 +5,23 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
 
-def plot_violin(axis, position, width, data, color):
+def plot_violin(axis, position, width, data, color, alpha):
 
+    # color = matplotlib.colors.to_rgba("red", alpha)
     v = axis.violinplot(data, positions=[position], widths=[width], showmeans=True)
     for pc in v['bodies']:
-        pc.set_facecolor(color)
-        pc.set_facecolor(color)
-        pc.set_edgecolor(color)
-    v['cmaxes'].set_color(color)
-    v['cmaxes'].set_linewidth(2)
-    v['cmins'].set_color(color)
-    v['cbars'].set_color(color)
-    v['cbars'].set_linewidth(1)
-    v['cmeans'].set_color(color)
+        pc.set_color(color)
+        pc.set_alpha(alpha)
+    bar_color = "black"
+    bar_linewidth = 1.15
+    v['cmaxes'].set_color(bar_color)
+    v['cmaxes'].set_linewidth(bar_linewidth)
+    v['cmins'].set_color(bar_color)
+    v['cmins'].set_linewidth(bar_linewidth)
+    v['cbars'].set_color(bar_color)
+    v['cbars'].set_linewidth(bar_linewidth)
+    v['cmeans'].set_color(bar_color)
+    v['cmeans'].set_linewidth(bar_linewidth)
     return v
 
 
@@ -83,7 +87,7 @@ if __name__ == "__main__":
                         violin_data.append(100.0*(alg_makespan - ms) / alg_makespan)
 
             position = xticks_mapping[noise] + algo_position_offset[alg]
-            violin = plot_violin(ax1, position, violin_width, violin_data, algo_color_map[alg])
+            violin = plot_violin(ax1, position, violin_width, violin_data, algo_color_map[alg], 1.0)
             violins.append(violin)
 
     ax1.legend([x['bodies'][0] for x in violins], [(r"$A_{" + a + r"}$") for a in algos], loc=3, fontsize=fontsize-1, ncol=2)
@@ -134,6 +138,16 @@ if __name__ == "__main__":
     workflow_color_map['blast-chameleon-medium-002.json'] = "olive"
     workflow_color_map['soykb-chameleon-10fastq-20ch-001.json'] = "chocolate"
     workflow_color_map['srasearch-chameleon-10a-003.json'] = "magenta"
+
+    workflow_alpha_map = {}
+    workflow_alpha_map['montage-chameleon-2mass-10d-001.json'] = 0.6
+    workflow_alpha_map['epigenomics-chameleon-ilmn-4seq-50k-001.json'] = 0.5
+    workflow_alpha_map['bwa-chameleon-large-003.json'] = 0.4
+    workflow_alpha_map['cycles-chameleon-2l-2c-12p-001.json'] = 0.2
+    workflow_alpha_map['1000genome-chameleon-8ch-250k-001.json'] = 0.6
+    workflow_alpha_map['blast-chameleon-medium-002.json'] = 0.5
+    workflow_alpha_map['soykb-chameleon-10fastq-20ch-001.json'] = 0.4
+    workflow_alpha_map['srasearch-chameleon-10a-003.json'] = 0.2
 
     f, (ax1, ax2) = plt.subplots(2, 1, sharey=True, figsize=(12,6))
 
@@ -191,10 +205,10 @@ if __name__ == "__main__":
             offset = workflow_offset[workflow]
             if workflow_top_or_bottom[workflow] == "top":
                 position = xticks_mapping[noise] + workflow_offset[workflow]
-                top_violins.append(plot_violin(ax1, position + offset, violin_width, violin_data, workflow_color_map[workflow]))
+                top_violins.append(plot_violin(ax1, position + offset, violin_width, violin_data, workflow_color_map[workflow], workflow_alpha_map[workflow]))
             else:
                 position = xticks_mapping[noise] + workflow_offset[workflow]
-                bottom_violins.append(plot_violin(ax2, position + offset, violin_width, violin_data, workflow_color_map[workflow]))
+                bottom_violins.append(plot_violin(ax2, position + offset, violin_width, violin_data, workflow_color_map[workflow], workflow_alpha_map[workflow]))
 
 
         ax1.legend([x['bodies'][0] for x in top_violins], ["W"+workflow_id_map[x] for x in workflow_top_or_bottom if workflow_top_or_bottom[x] == "top"], loc=3, fontsize=fontsize-1, ncol=2)
