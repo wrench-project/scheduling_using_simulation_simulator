@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 message(STATUS "Cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}")
 
-project(scheduling-with-simulations)
+project(scheduling-using-simulation-simulator)
 
 add_definitions("-Wall -Wno-unused-variable -Wno-unused-private-field")
 
@@ -46,10 +46,10 @@ find_library(PUGIXML_LIBRARY NAMES pugixml)
 find_library(GTEST_LIBRARY NAMES gtest)
 
 # generating the executable
-add_executable(scheduling_using_simulations_simulator ${SOURCE_FILES})
+add_executable(scheduling_using_simulation_simulator ${SOURCE_FILES})
 
 if (ENABLE_BATSCHED)
-    target_link_libraries(scheduling_using_simulations_simulator
+    target_link_libraries(scheduling_using_simulation_simulator
             ${WRENCH_LIBRARY}
             ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
@@ -57,7 +57,7 @@ if (ENABLE_BATSCHED)
             ${PUGIXML_LIBRARY}
             -lzmq )
 else()
-    target_link_libraries(scheduling_using_simulations_simulator
+    target_link_libraries(scheduling_using_simulation_simulator
             ${WRENCH_LIBRARY}
             ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
@@ -66,7 +66,7 @@ else()
             )
 endif()
 
-install(TARGETS scheduling_using_simulations_simulator DESTINATION bin)
+install(TARGETS scheduling_using_simulation_simulator DESTINATION bin)
 
 # generating unit tests
 add_executable(unit_tests EXCLUDE_FROM_ALL
