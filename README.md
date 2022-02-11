@@ -9,13 +9,13 @@ algorithm to use at runtime, thereby using perhaps more than one scheduling
 algorithm during the application execution. Algorithm selection is made
 based on simulation results, that is, one executes simulations of an
 application execution throughout that very execution! This simulator
-uses this appraoch (yes, simulation within simulation) in the context
+uses this approach (yes, simulation within simulation) in the context
 of scientific workflow applications.
 
 ## Simulator usage
 
 After building the simulator (see instructions below), just invoke it
-as `./scheduling_using_simulations_simulator --help` to see the (long and detailed) usage message.
+as `./scheduling_using_simulation_simulator --help` to see the (long and detailed) usage message.
 
 A sample invocation could be:
 
@@ -29,18 +29,19 @@ A sample invocation could be:
 
 - **g++** (version 6.3 or higher) or (**clang** - version 3.8 or higher)
 - **CMake** - version 3.7 or higher
-- [PugiXML](http://pugixml.org/) - version 1.8 or higher
-- [JSON for Modern C++](https://github.com/nlohmann/json) - version 3.9.0 or higher
-- [SimGrid](https://framagit.org/simgrid/simgrid/-/releases) - version 3.29
-- [WRENCH](https://framagit.org/simgrid/simgrid/-/releases) - version 1.10 or later 1.x (not 2.x)
+- [SimGrid](https://framagit.org/simgrid/simgrid/-/releases) - version 3.29 and its dependencies
+- [WRENCH](https://framagit.org/simgrid/simgrid/-/releases) - version 1.10 or later 1.x (but not 2.x) and its dependencies
 
-### Building instructions
+### Installation instructions
+
+You've all done it before:
 
 ```bash
 mkdir build
 cd build
 cmake ..
 make
+sudo make install
 ```
 
 
