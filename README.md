@@ -29,8 +29,8 @@ A sample invocation could be:
 
 - **g++** (version 6.3 or higher) or (**clang** - version 3.8 or higher)
 - **CMake** - version 3.7 or higher
-- [SimGrid](https://framagit.org/simgrid/simgrid/-/releases) - version 3.29 and its dependencies
-- [WRENCH](https://framagit.org/simgrid/simgrid/-/releases) - version 1.10 or later 1.x (but not 2.x) and its dependencies
+- [SimGrid](https://framagit.org/simgrid/simgrid/-/releases) - version 3.31 and its dependencies
+- [WRENCH](https://framagit.org/simgrid/simgrid/-/releases) - version 2.0 or later
 
 ### Installation instructions
 
