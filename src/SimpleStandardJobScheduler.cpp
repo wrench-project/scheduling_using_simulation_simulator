@@ -62,12 +62,17 @@ void SimpleStandardJobScheduler::init(
             }
         }
     }
+    // Create idle core map
+    for (auto const &cs : this->compute_services) {
+        auto cores_available = cs->getPerHostNumCores();
+        this->idle_cores_map[cs] = cores_available;
+    }
 
 }
 
 std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location(
         const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
-        wrench::WorkflowFile *file) {
+        std::shared_ptr<wrench::DataFile> file) {
 
     auto entries = this->file_registry_service->lookupEntry(file);
     if (entries.empty()) {
@@ -102,7 +107,7 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
 }
 
-bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
+bool SimpleStandardJobScheduler::taskCanRunOn(std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
 
 #if 0
     auto idle_cores = service->getPerHostNumIdleCores();
@@ -114,11 +119,16 @@ bool SimpleStandardJobScheduler::taskCanRunOn(wrench::WorkflowTask *task, const 
     std::cerr << service->getName() << " IS NOT OK\n";
     return false;
 #else
-    return service->isThereAtLeastOneHostWithIdleResources(task->getMinNumCores(), 0.0);
+    for (auto const &entry : this->idle_cores_map[service]) {
+        if (entry.second >= task->getMinNumCores()) {
+            return true;
+        }
+    }
+    return false;
 #endif
 }
 
-void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTask *> &tasks) {
+void SimpleStandardJobScheduler::prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask> > &tasks) {
 
     std::sort(tasks.begin(), tasks.end(),
               this->task_priority_schemes[std::get<0>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))]);
@@ -126,8 +136,9 @@ void SimpleStandardJobScheduler::prioritizeTasks(std::vector<wrench::WorkflowTas
 }
 
 /** Returns true if found something **/
-bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
+bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTask> task,
                                               std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
+                                              std::string &picked_host,
                                               unsigned long *picked_num_cores) {
 
 
@@ -145,38 +156,59 @@ bool SimpleStandardJobScheduler::scheduleTask(wrench::WorkflowTask *task,
         return false;
     }
 
+//    std::cerr << "I HAVE SELECTED " << possible_services.size() << " SERVICES THAT COULD WORK\n";
+//    for (auto const &h : possible_services) {
+//        std::cerr << "  - " << h->getName() << "\n";
+//    }
+
+    picked_host = "";
     *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, possible_services);
     *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, *picked_service);
+    for (auto const &entry : this->idle_cores_map[*picked_service]) {
+        if (entry.second >= *picked_num_cores) {
+            picked_host = entry.first;
+            break;
+        }
+    }
+    if (picked_host.empty()) {
+        throw std::runtime_error("Picked_host is empty in SimpleStandardJobScheduler::scheduleTask(): this should not happen");
+    }
     return true;
 }
 
-void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask *> tasks) {
+void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
     prioritizeTasks(tasks);
 
     int num_scheduled_tasks = 0;
-    for (auto task : tasks) {
+    for (const auto &task : tasks) {
 
         WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;
+        std::string picked_host;
         unsigned long picked_num_cores;
 
-        if (not scheduleTask(task, &picked_service, &picked_num_cores)) {
+        if (not scheduleTask(task, &picked_service, picked_host, &picked_num_cores)) {
             WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
             continue;
         }
 
-        WRENCH_INFO("Submitting task %s for execution on service at cluster %s",
+        WRENCH_INFO("Submitting task %s for execution on service at cluster %s on host %s with %lu cores",
                     task->getID().c_str(),
-                    picked_service->getHostname().c_str());
+                    picked_service->getHostname().c_str(),
+                    picked_host.c_str(),
+                    picked_num_cores);
+
+        // IMPORTANT: Update the idle cores map
+        this->idle_cores_map[picked_service][picked_host] -= picked_num_cores;
 
         num_scheduled_tasks++;
 
         // Submitting the task as a simple job
-        std::map<wrench::WorkflowFile *, std::shared_ptr<wrench::FileLocation>> file_locations;
+        std::map<std::shared_ptr<wrench::DataFile> , std::shared_ptr<wrench::FileLocation>> file_locations;
 
         // Input files are read from the "best" location
-        for (auto file : task->getInputFiles()) {
+        for (const auto &file : task->getInputFiles()) {
             // Pick a location
             std::shared_ptr<wrench::FileLocation> picked_location = pick_location(picked_service, file);
             file_locations.insert(std::make_pair(file, picked_location));
@@ -185,12 +217,12 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<wrench::WorkflowTask 
         // Output file are all written locally
         std::shared_ptr<wrench::StorageService> target_ss = this->map_compute_to_storage[picked_service];
 
-        for (auto f : task->getOutputFiles()) {
+        for (const auto &f : task->getOutputFiles()) {
             file_locations.insert(std::make_pair(f, wrench::FileLocation::LOCATION(target_ss)));
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);
-        this->job_manager->submitJob(job, picked_service, {{task->getID(), std::to_string(picked_num_cores)}});
+        this->job_manager->submitJob(job, picked_service, {{task->getID(), picked_host + ":" + std::to_string(picked_num_cores)}});
 
     }
 //    std::cerr << "DEBUG SCHEDULED " << num_scheduled_tasks << "\n";
@@ -252,14 +284,14 @@ std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::stri
     return tokens;
 }
 
-void SimpleStandardJobScheduler::computeBottomLevels(wrench::Workflow *workflow) {
+void SimpleStandardJobScheduler::computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow) {
 
     for (auto const &t : workflow->getEntryTasks()) {
         computeTaskBottomLevel(t);
     }
 }
 
-void SimpleStandardJobScheduler::computeTaskBottomLevel(wrench::WorkflowTask *task) {
+void SimpleStandardJobScheduler::computeTaskBottomLevel(std::shared_ptr<wrench::WorkflowTask> task) {
 
     if (this->bottom_levels.find(task) != this->bottom_levels.end()) {
         return;
@@ -275,3 +307,4 @@ void SimpleStandardJobScheduler::computeTaskBottomLevel(wrench::WorkflowTask *ta
     this->bottom_levels[task] = my_bl + max;
 //    std::cerr << task->getID() << ": " << this->bottom_levels[task] << "\n";
 }
+

@@ -19,19 +19,19 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler_task_priority_schemes, "Log catego
 /***********************************************/
 void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
 
-    this->task_priority_schemes["most_flops"] = [](const wrench::WorkflowTask *a,
-                                                   const wrench::WorkflowTask *b) -> bool {
+    this->task_priority_schemes["most_flops"] = [](const std::shared_ptr<wrench::WorkflowTask> a,
+                                                   const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
         if (a->getFlops() < b->getFlops()) {
             return true;
         } else if (a->getFlops() > b->getFlops()) {
             return false;
         } else {
-            return ((unsigned long) a < (unsigned long) b);
+            return ((unsigned long) a.get() < (unsigned long) b.get());
         }
     };
 
-    this->task_priority_schemes["most_data"] = [](const wrench::WorkflowTask *a,
-                                                  const wrench::WorkflowTask *b) -> bool {
+    this->task_priority_schemes["most_data"] = [](const std::shared_ptr<wrench::WorkflowTask> a,
+                                                  const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
         double a_bytes = 0.0, b_bytes = 0.0;
         for (auto const &f : a->getInputFiles()) {
             a_bytes += f->getSize();
@@ -45,29 +45,29 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         } else if (a_bytes > b_bytes) {
             return false;
         } else {
-            return ((unsigned long) a < (unsigned long) b);
+            return ((unsigned long) a.get() < (unsigned long) b.get());
         }
     };
 
     this->task_priority_schemes["highest_bottom_level"] = [this](
-            const wrench::WorkflowTask *a,
-            const wrench::WorkflowTask *b) -> bool {
+            const std::shared_ptr<wrench::WorkflowTask> a,
+            const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
 
-        double a_bl = this->bottom_levels[(wrench::WorkflowTask  *)a];
-        double b_bl = this->bottom_levels[(wrench::WorkflowTask  *)b];
+        double a_bl = this->bottom_levels[a];
+        double b_bl = this->bottom_levels[b];
 
         if (a_bl < b_bl) {
             return true;
         } else if (a_bl > b_bl) {
             return false;
         } else {
-            return ((unsigned long) a < (unsigned long) b);
+            return ((unsigned long) a.get() < (unsigned long) b.get());
         }
     };
 
     this->task_priority_schemes["most_children"] = [](
-            const wrench::WorkflowTask *a,
-            const wrench::WorkflowTask *b) -> bool {
+            const std::shared_ptr<wrench::WorkflowTask> a,
+            const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
 
         double a_num_children = a->getNumberOfChildren();
         double b_num_children = b->getNumberOfChildren();
@@ -77,16 +77,16 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         } else if (a_num_children > b_num_children) {
             return false;
         } else {
-            return ((unsigned long) a < (unsigned long) b);
+            return ((unsigned long) a.get() < (unsigned long) b.get());
         }
     };
 
-    this->task_priority_schemes["random"] = [this](
-            const wrench::WorkflowTask *a,
-            const wrench::WorkflowTask *b) -> bool {
+    this->task_priority_schemes["random"] = [](
+            const std::shared_ptr<wrench::WorkflowTask> a,
+            const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
 
         // This is not really random, but leads to deterministic sorting.
-        return ((17 * (unsigned long)a + 11 * (unsigned long)b) % 2) == 1;
+        return ((17 * (unsigned long)a.get() + 11 * (unsigned long)b.get()) % 2) == 1;
     };
 
 }

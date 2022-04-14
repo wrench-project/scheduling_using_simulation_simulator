@@ -22,10 +22,10 @@ namespace po = boost::program_options;
 int main(int argc, char **argv) {
 
     // Declaration of the top-level WRENCH simulation object
-    wrench::Simulation simulation;
+    auto simulation = wrench::Simulation::createSimulation();
 
     // Initialization of the simulation
-    simulation.init(&argc, argv);
+    simulation->init(&argc, argv);
 
     // Generic lambda to check if a numeric argument is in some range
     auto in = [](const auto &min, const auto &max, char const * const opt_name) {
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
              "Print the JSON input configuration, without the actual simulation results\n")
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
-             "(use --print_all_scheduling_algorithms to see the list of algorithms)\n")
+             "(use --print_all_algorithms to see the list of algorithms)\n")
             ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
              "The seed used for the RNG used by the random:random:random algorithm "
              "(between 1 and 200000)")
@@ -201,16 +201,14 @@ int main(int argc, char **argv) {
     std::string wms_host = "wms_host";
     try {
         PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>());
-        simulation.instantiatePlatform(platform_creator);
+        simulation->instantiatePlatform(platform_creator);
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
         exit(1);
     }
 
-
-
     // Start a BareMetal Service on each cluster, and a Storage Service on the head node
-    std::set<std::shared_ptr<wrench::ComputeService>> compute_services;
+    std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
     auto specs = SimpleStandardJobScheduler::stringSplit(cluster_specs,',');
     int counter = 0;
@@ -228,7 +226,7 @@ int main(int argc, char **argv) {
             compute_nodes.push_back(name+"-node-"+std::to_string(i));
         }
 
-        compute_services.insert(simulation.add(
+        compute_services.insert(simulation->add(
                 new wrench::BareMetalComputeService(
                         head_node,
                         compute_nodes,
@@ -236,7 +234,7 @@ int main(int argc, char **argv) {
                         {},
                         {})));
 
-        storage_services.insert(simulation.add(
+        storage_services.insert(simulation->add(
                 new wrench::SimpleStorageService(
                         head_node,
                         {"/"},
@@ -253,30 +251,29 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation.add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
+    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
 
     // Create a file registry service
-    auto file_registry_service = simulation.add(new wrench::FileRegistryService(wms_host));
+    auto file_registry_service = simulation->add(new wrench::FileRegistryService(wms_host));
     file_registry_service->setNetworkTimeoutValue(DBL_MAX);
 
-    // Create the WMS
-    auto wms = simulation.add(
-            new SimpleWMS(scheduler,
-                          first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise, noise_seed,
-                          compute_services, storage_services, file_registry_service, wms_host));
-    wms->setNetworkTimeoutValue(DBL_MAX);
-
-
     // Parse the workflow
-    auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
+    auto workflow = wrench::WfCommonsWorkflowParser::createWorkflowFromJSON(
             workflow_file, reference_flops, false, 1, 32, true);
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
+
+    // Create the WMS
+    auto wms = simulation->add(
+            new SimpleWMS(scheduler,
+                          workflow,
+                          first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
+                          simulation_noise, noise_seed,
+                          compute_services, storage_services, file_registry_service, wms_host));
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);
@@ -285,25 +282,21 @@ int main(int argc, char **argv) {
         t->setParallelModel(wrench::ParallelModel::AMDAHL(random_dist(rng)));
     }
 
-    // Add it to the WMS
-    wms->addWorkflow(workflow);
-
-
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {
-        simulation.stageFile(f, wms_ss);
+        simulation->stageFile(f, wms_ss);
     }
 
+    simulation->getOutput().enableFileReadWriteCopyTimestamps(false);
+    simulation->getOutput().enableWorkflowTaskTimestamps(false);
     // Launch the simulation
 //    std::cerr << "Launching the Simulation..." << std::endl;
     try {
-        simulation.launch();
+        simulation->launch();
     } catch (std::runtime_error &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 0;
     }
-
-
 
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
@@ -318,10 +311,10 @@ int main(int argc, char **argv) {
 
     // Compute total energy
     double energy = 0.0;
-    for (auto const &h : simulation.getHostnameList()) {
+    for (auto const &h : simulation->getHostnameList()) {
         if (h == "wms_host") continue;
 
-        energy += simulation.getEnergyConsumed(h);
+        energy += simulation->getEnergyConsumed(h);
     }
     output_json["energy_consumed"] = energy;
 
