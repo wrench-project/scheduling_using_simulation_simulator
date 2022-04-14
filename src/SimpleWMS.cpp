@@ -8,6 +8,7 @@
 * (at your option) any later version.
 */
 #include <iostream>
+#include <utility>
 #include <sys/wait.h>
 
 #include "SimpleWMS.h"
@@ -25,22 +26,22 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      double speculative_work_fraction,
                      double simulation_noise,
                      int noise_seed,
-                     const std::set<std::shared_ptr<wrench::BareMetalComputeService>> &compute_services,
-                     const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
-                     const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
+                     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
+                     std::set<std::shared_ptr<wrench::StorageService>> storage_services,
+                     std::shared_ptr<wrench::FileRegistryService> file_registry_service,
                      const std::string &hostname) : wrench::ExecutionController(
         hostname,
         "simple"),
-                                                    workflow(workflow),
+                                                    workflow(std::move(workflow)),
                                                     scheduler(scheduler),
                                                     first_scheduler_change_trigger(first_scheduler_change_trigger),
                                                     periodic_scheduler_change_trigger(periodic_scheduler_change_trigger),
                                                     speculative_work_fraction(speculative_work_fraction),
                                                     simulation_noise(simulation_noise),
                                                     noise_seed(noise_seed),
-                                                    compute_services(compute_services),
-                                                    storage_services(storage_services),
-                                                    file_registry_service(file_registry_service)
+                                                    compute_services(std::move(compute_services)),
+                                                    storage_services(std::move(storage_services)),
+                                                    file_registry_service(std::move(file_registry_service))
                                                     {
 }
 
@@ -75,6 +76,10 @@ int SimpleWMS::main() {
         total_work += t->getFlops();
     }
 
+    // Set of workflow levels that have already become ready
+    std::set<unsigned long> already_ready_levels;
+    already_ready_levels.insert(0);
+
 // Pipe used for communication with child
     int pipefd[2];
 
@@ -83,14 +88,28 @@ int SimpleWMS::main() {
 
         bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1));
         bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
-        bool should_do_next_change = (this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work));
+        bool should_do_next_change;
+
+        if (periodic_scheduler_change_trigger >= 0) {
+            // Work-based selection trigger
+            should_do_next_change = this->one_schedule_change_has_happened and (this->work_done_since_last_scheduler_change > this->periodic_scheduler_change_trigger * total_work);
+        } else {
+            // Level-based selection trigger
+            bool new_level_became_ready = false;
+            for (auto const &t : this->workflow->getReadyTasks()) {
+                if (already_ready_levels.find(t->getTopLevel()) == already_ready_levels.end()) {
+                    new_level_became_ready = true;
+                    already_ready_levels.insert(t->getTopLevel());
+                }
+            }
+            should_do_next_change = this->one_schedule_change_has_happened and (new_level_became_ready);
+        }
 
 //        std::cerr << "speculation can happen: " << speculation_can_happen << "\n";
 //        std::cerr << "should_do_first_change: " << should_do_first_change << "\n";
 //        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
 
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
-
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";

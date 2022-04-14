@@ -27,9 +27,9 @@ public:
               double speculative_work_fraction,
               double simulation_noise,
               int noise_seed,
-              const std::set<std::shared_ptr<wrench::BareMetalComputeService>> &compute_services,
-              const std::set<std::shared_ptr<wrench::StorageService>> &storage_services,
-              const std::shared_ptr<wrench::FileRegistryService> &file_registry_service,
+              std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
+              std::set<std::shared_ptr<wrench::StorageService>> storage_services,
+              std::shared_ptr<wrench::FileRegistryService> file_registry_service,
               const std::string &hostname);
 
     std::vector<unsigned long> getAlgorithmSequence() { return this->algorithm_sequence; }

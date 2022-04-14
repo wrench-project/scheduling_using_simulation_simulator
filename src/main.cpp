@@ -85,8 +85,8 @@ int main(int argc, char **argv) {
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
              "The algorithm may change for the first time once this fraction of the work has been performed "
              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n")
-            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "periodic_scheduler_change_trigger")),
-             "The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\n")
+            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(-1.0, 1.0, "periodic_scheduler_change_trigger")),
+             "The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\nIf <0, then changes occur each time the first task in a workflow level becomes ready!\n")
             ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
              "The fraction of work that a speculative execution performs before reporting to the master process "
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")")
