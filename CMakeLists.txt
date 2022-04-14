@@ -41,7 +41,7 @@ set(TEST_FILES
 
 # wrench library and dependencies
 find_library(WRENCH_LIBRARY NAMES wrench)
-find_library(WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY NAMES wrenchpegasusworkflowparser)
+find_library(WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY NAMES wrenchwfcommonsworkflowparser)
 find_library(PUGIXML_LIBRARY NAMES pugixml)
 find_library(GTEST_LIBRARY NAMES gtest)
 
@@ -51,7 +51,7 @@ add_executable(simulator ${SOURCE_FILES})
 if (ENABLE_BATSCHED)
     target_link_libraries(simulator
             ${WRENCH_LIBRARY}
-            ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
+            ${WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
             ${Boost_LIBRARIES}
             ${PUGIXML_LIBRARY}
@@ -59,7 +59,7 @@ if (ENABLE_BATSCHED)
 else()
     target_link_libraries(simulator
             ${WRENCH_LIBRARY}
-            ${WRENCH_PEGASUS_WORKFLOW_PARSER_LIBRARY}
+            ${WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
             ${Boost_LIBRARIES}
             ${PUGIXML_LIBRARY}

@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
     auto file_registry_service = simulation->add(new wrench::FileRegistryService(wms_host));
 
     // Parse the workflow
-    auto workflow = wrench::PegasusWorkflowParser::createWorkflowFromJSON(
+    auto workflow = wrench::WfCommonsWorkflowParser::createWorkflowFromJSON(
             workflow_file, reference_flops, false, 1, 32, true);
 
     // Compute all task bottom levels, which is useful for some scheduling options

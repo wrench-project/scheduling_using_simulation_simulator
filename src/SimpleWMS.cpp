@@ -79,7 +79,6 @@ int SimpleWMS::main() {
     int pipefd[2];
 
     while (true) {
-
         // Scheduler change?
 
         bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1));
