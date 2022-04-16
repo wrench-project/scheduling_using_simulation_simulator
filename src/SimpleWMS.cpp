@@ -20,12 +20,14 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_wms, "Log category for Simple WMS");
 * @brief Create a Simple WMS with a workflow instance, a scheduler implementation, and a list of compute services
 */
 SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
-                    std::shared_ptr<wrench::Workflow> workflow,
+                     std::shared_ptr<wrench::Workflow> workflow,
                      double first_scheduler_change_trigger,
                      double periodic_scheduler_change_trigger,
                      double speculative_work_fraction,
+                     std::string &simulation_noise_scheme,
                      double simulation_noise,
                      int noise_seed,
+                     std::string &algorithm_selection_scheme,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
                      std::shared_ptr<wrench::FileRegistryService> file_registry_service,
@@ -37,12 +39,14 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     first_scheduler_change_trigger(first_scheduler_change_trigger),
                                                     periodic_scheduler_change_trigger(periodic_scheduler_change_trigger),
                                                     speculative_work_fraction(speculative_work_fraction),
+                                                    simulation_noise_scheme(simulation_noise_scheme),
                                                     simulation_noise(simulation_noise),
                                                     noise_seed(noise_seed),
+                                                    algorithm_selection_scheme(algorithm_selection_scheme),
                                                     compute_services(std::move(compute_services)),
                                                     storage_services(std::move(storage_services)),
                                                     file_registry_service(std::move(file_registry_service))
-                                                    {
+{
 }
 
 /**
@@ -70,7 +74,7 @@ int SimpleWMS::main() {
                           this->file_registry_service,
                           wrench::Simulation::getHostName());
 
-// Compute the total work
+    // Compute the total work
     double total_work = 0.0;
     for (auto const &t : this->workflow->getTasks()) {
         total_work += t->getFlops();
@@ -80,8 +84,26 @@ int SimpleWMS::main() {
     std::set<unsigned long> already_ready_levels;
     already_ready_levels.insert(0);
 
-// Pipe used for communication with child
+    // Pipe used for communication with child
     int pipefd[2];
+
+
+    // Compute noisy tasks and file sizes that children will use and thus
+    // incur simulation errors (for the micro scheme)
+    std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
+    std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
+    if (this->simulation_noise_scheme == "micro") {
+        for (auto const &f : workflow->getFileMap()) {
+            double size = f.second->getSize();
+            size = std::max<double>(0, size + size * random_dist(rng));
+            noisy_file_sizes[f.second] = size;
+        }
+        for (auto const &t : workflow->getTasks()) {
+            double flops = t->getFlops();
+            flops = std::max<double>(0, flops + flops * random_dist(rng));
+            noisy_task_flops[t] = flops;
+        }
+    }
 
     while (true) {
         // Scheduler change?
@@ -114,7 +136,8 @@ int SimpleWMS::main() {
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
             std::cerr.flush();
-            std::vector<double> makespans;
+            std::vector<std::pair<double, double>> makespans_and_energies;
+
             for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
                 pipe(pipefd);
                 auto pid = fork();
@@ -126,27 +149,61 @@ int SimpleWMS::main() {
 //                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
                     this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
+                    if (this->simulation_noise_scheme == "micro") {
+                        // Apply all noise
+                        for (auto const &f : workflow->getFileMap()) {
+                            f.second->setSize(noisy_file_sizes[f.second]);
+                        }
+                        for (auto const &t : workflow->getTasks()) {
+                            t->setFlops(noisy_task_flops[t]);
+                        }
+                    }
+
                     break;
                 } else {
                     // Parent
                     close(pipefd[1]);
                     int stat_loc;
                     double child_time;
+                    double child_energy;
                     read(pipefd[0], &child_time, sizeof(double));
 //                    std::cerr << "Child told me: " << child_time << "\n";
-                    child_time = child_time + child_time * random_dist(rng);
-                    makespans.push_back(child_time);
+                    if (this->simulation_noise_scheme == "macro") {
+                        child_time = child_time + child_time * random_dist(rng);
+                    }
+                    read(pipefd[0], &child_energy, sizeof(double));
+                    makespans_and_energies.emplace_back(child_time, child_energy);
                     waitpid(pid, &stat_loc, 0);
                 }
             }
             if (not this->i_am_speculative) {
-                auto argmin = std::min_element(makespans.begin(), makespans.end()) - makespans.begin();
+//                for (int i=0; i < makespans_and_energies.size(); i++) {
+//                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
+//                }
+                unsigned long argmin;
+                if (this->algorithm_selection_scheme == "makespan") {
+                    argmin = std::min_element(makespans_and_energies.begin(), makespans_and_energies.end(),
+                                              [](std::pair<double, double> a, std::pair<double, double> b) {
+                                                  return a.first < b.first;
+                                              }) - makespans_and_energies.begin();
+
+                } else if (this->algorithm_selection_scheme == "energy") {
+                    argmin = std::min_element(makespans_and_energies.begin(), makespans_and_energies.end(),
+                                              [](std::pair<double, double> a, std::pair<double, double> b) {
+                                                  return a.second < b.second;
+                                              }) - makespans_and_energies.begin();
+                } else {
+                    throw std::runtime_error("Unknown algorithm selection scheme: " + this->algorithm_selection_scheme);
+                }
+
+//                std::cerr << "ARGMIN = " << argmin << "\n";
+
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
                 this->algorithm_sequence.push_back(algorithm_index);
                 std::cerr << "Switching to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                          this->scheduler->schedulingAlgorithmToString(this->scheduler->getEnabledSchedulingAlgorithms().at(argmin)) << "\n";
+                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << "\n";
 
                 this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }
@@ -181,9 +238,18 @@ int SimpleWMS::main() {
         double now = wrench::Simulation::getCurrentSimulatedDate();
         // Send it back to the parent
         write(pipefd[1], &now, sizeof(double));
+        // Get the total energy consumption
+        double energy = 0.0;
+        for (auto const &h : wrench::Simulation::getHostnameList()) {
+            if (h != "wms_host") {
+                energy += this->simulation->getEnergyConsumed(h);
+            }
+        }
+        // Send it back to the papent
+        write(pipefd[1], &energy, sizeof(double));
         close(pipefd[1]);
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
-    } 
+    }
     this->job_manager.reset();
 
 

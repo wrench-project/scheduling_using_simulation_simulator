@@ -56,9 +56,11 @@ int main(int argc, char **argv) {
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
+    std::string simulation_noise_scheme;
     double simulation_noise;
     int random_algorithm_seed;
     int noise_seed;
+    std::string algorithm_selection_scheme;
 
 
     // Define command-line argument options
@@ -90,12 +92,16 @@ int main(int argc, char **argv) {
             ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
              "The fraction of work that a speculative execution performs before reporting to the master process "
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")")
+            ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->value_name("<simulation noise scheme>"),
+             "(either 'macro' (makespan scaling) or 'micro' (flops and byte scaling))")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")")
             ("noise_seed", po::value<int>(&noise_seed)->value_name("<noise seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
              "The seed used for the RNG that generates simulation noise "
              "(between 1 and 200000)")
+            ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->value_name("<algorithm selection scheme>"),
+             "('makespan', 'energy')")
             ;
 
     // Parse command-line arguments
@@ -120,6 +126,16 @@ int main(int argc, char **argv) {
 
     // Set the random:random:random algorithm's seed
     scheduler->setRandomAlgorithmSeed(random_algorithm_seed);
+
+    // Check the noise scheme
+    if (simulation_noise_scheme != "macro" and simulation_noise_scheme != "micro") {
+        throw std::invalid_argument("--simulation_noise_scheme value should be 'macro' or 'micro'");
+    }
+
+    // Check the algorithm selection scheme
+    if ((algorithm_selection_scheme != "makespan") and (algorithm_selection_scheme != "energy")) {
+        throw std::invalid_argument("Invalid --algorithm_selection_scheme value");
+    }
 
 
     // Add all specified scheduling algorithms in oder to the scheduler
@@ -272,7 +288,8 @@ int main(int argc, char **argv) {
             new SimpleWMS(scheduler,
                           workflow,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise, noise_seed,
+                          simulation_noise_scheme, simulation_noise, noise_seed,
+                          algorithm_selection_scheme,
                           compute_services, storage_services, file_registry_service, wms_host));
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
