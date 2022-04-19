@@ -1,6 +1,7 @@
 #include "PlatformCreator.h"
 #include "SimpleStandardJobScheduler.h"
 #include <wrench.h>
+#include <stdlib.h>
 
 std::tuple<sg4::NetZone*, simgrid::kernel::routing::NetPoint*, sg4::Link *>
 PlatformCreator::create_wms(const sg4::NetZone* root, std::string name, std::string bandwidth) {
@@ -46,10 +47,32 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
                 hostname = name + "-node-" + std::to_string(i);
             }
             /* create host */
-            auto host = cluster->create_host(hostname, flops);
+            double flop_number = atof(flops.c_str()); // Will remove the units!
+            std::string flop_unit;
+            for (char c : flops) {
+                if (((c >= '0') and (c <= '9')) or (c == '.')) {
+                    continue;
+                }
+                flop_unit += c;
+            }
+
+            std::vector<std::string> speed_per_pstate;
+            int half_num_pstates = 100;
+            for (int j=1; j < 2*half_num_pstates; j++) {
+                double pstate_speed = flop_number * (1.0 - (double)(half_num_pstates - j)/half_num_pstates);
+                speed_per_pstate.push_back(std::to_string(pstate_speed)+flop_unit);
+            }
+
+            auto host = cluster->create_host(hostname, speed_per_pstate);
+
             host->set_core_count(num_cores);
-            host->set_pstate_speed({flops});
-            host->set_property("wattage_per_state", "10.00:100.00"); // TODO: TO CHANGE
+            std::string wattage_per_state_value;
+            for (int j=0; j < speed_per_pstate.size(); j++) {
+                // TODO: Is 10,100 a good idea?
+                wattage_per_state_value += std::string("10.00:100.00") + (j < speed_per_pstate.size() - 1 ? "," : "");
+            }
+
+            host->set_property("wattage_per_state", wattage_per_state_value);
             host->set_property("wattage_off", "0.0");
 
             /* Create disks on the head host */

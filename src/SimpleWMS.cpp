@@ -59,15 +59,17 @@ int SimpleWMS::main() {
 
     wrench::TerminalOutput::setThisProcessLoggingColor(wrench::TerminalOutput::COLOR_GREEN);
 
-
     WRENCH_INFO("About to execute a workflow with %lu tasks", this->workflow->getNumberOfTasks());
 
-// Create a job manager
+    // Set all the pstates to the "middle" value
+    for (auto const &h : wrench::Simulation::getHostnameList()) {
+        this->simulation->setPstate(h, ((int)wrench::Simulation::getListOfPstates(h).size()-1)/2); // (2*n+1 -1) / 2
+    }
+    // Create a job manager
     this->job_manager = this->createJobManager();
     this->data_movement_manager = this->createDataMovementManager();
 
-// Initialize the scheduler
-
+    // Initialize the scheduler
     this->scheduler->init(this->job_manager,
                           this->compute_services,
                           this->storage_services,
@@ -87,12 +89,11 @@ int SimpleWMS::main() {
     // Pipe used for communication with child
     int pipefd[2];
 
-
     // Compute noisy tasks and file sizes that children will use and thus
-    // incur simulation errors (for the micro scheme)
+    // incur simulation errors (for the micro-application scheme)
     std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
     std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
-    if (this->simulation_noise_scheme == "micro") {
+    if (this->simulation_noise_scheme == "micro-application") {
         for (auto const &f : workflow->getFileMap()) {
             double size = f.second->getSize();
             size = std::max<double>(0, size + size * random_dist(rng));
@@ -102,6 +103,26 @@ int SimpleWMS::main() {
             double flops = t->getFlops();
             flops = std::max<double>(0, flops + flops * random_dist(rng));
             noisy_task_flops[t] = flops;
+        }
+    }
+    // Compute noisy host pstates and link bandwidth that children will use
+    // and thus incur simulation error (for the micro-platform scheme)
+    std::unordered_map<std::string, int> noisy_host_pstates;
+    std::unordered_map<std::string, double> noisy_link_bandwidths;
+    if (this->simulation_noise_scheme == "micro-platform") {
+        for (auto const &h : wrench::Simulation::getHostnameList()) {
+            int num_pstates = wrench::Simulation::getNumberofPstates(h);
+            int base_pstate = (num_pstates -1)/2;
+            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
+            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
+            new_pstate = std::max<int>(new_pstate, 0);
+            noisy_host_pstates[h] = new_pstate;
+//            std::cerr << "PSTATE BASE WAS " << base_pstate << " ---> " << new_pstate << "\n";
+        }
+        for (auto const &l : wrench::Simulation::getLinknameList()) {
+            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
+            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
+            noisy_link_bandwidths[l] = bandwidth;
         }
     }
 
@@ -149,13 +170,21 @@ int SimpleWMS::main() {
 //                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
                     this->scheduler->useSchedulingAlgorithm(algorithm_index);
                     this->i_am_speculative = true;
-                    if (this->simulation_noise_scheme == "micro") {
-                        // Apply all noise
+                    // Apply all noise if micro
+                    if (this->simulation_noise_scheme == "micro-application") {
                         for (auto const &f : workflow->getFileMap()) {
                             f.second->setSize(noisy_file_sizes[f.second]);
                         }
                         for (auto const &t : workflow->getTasks()) {
                             t->setFlops(noisy_task_flops[t]);
+                        }
+                    } else if (this->simulation_noise_scheme == "micro-platform") {
+                        for (auto const &h : noisy_host_pstates) {
+                            this->simulation->setPstate(h.first, h.second);
+                        }
+                        for (auto const &l : noisy_link_bandwidths) {
+                            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+                            link->set_bandwidth(l.second);
                         }
                     }
 
