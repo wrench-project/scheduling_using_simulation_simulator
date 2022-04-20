@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     std::string simulation_noise_scheme;
     double simulation_noise;
     int random_algorithm_seed;
-    int noise_seed;
+    int simulation_noise_seed;
     std::string algorithm_selection_scheme;
 
 
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
             ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
              "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
              "(use --print_all_algorithms to see the list of algorithms)\n")
-            ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
+            ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "simulation_noise_seed")),
              "The seed used for the RNG used by the random:random:random algorithm "
              "(between 1 and 200000)")
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
@@ -92,15 +92,15 @@ int main(int argc, char **argv) {
             ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
              "The fraction of work that a speculative execution performs before reporting to the master process "
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")")
-            ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->value_name("<simulation noise scheme>"),
+            ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
              "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")")
-            ("noise_seed", po::value<int>(&noise_seed)->value_name("<noise seed>")->default_value(42)->notifier(in(1, 200000, "noise_seed")),
+            ("simulation_noise_seed", po::value<int>(&simulation_noise_seed)->value_name("<simulation noise seed>")->default_value(42)->notifier(in(1, 200000, "simulation_noise_seed")),
              "The seed used for the RNG that generates simulation noise "
              "(between 1 and 200000)")
-            ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->value_name("<algorithm selection scheme>"),
+            ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->required()->value_name("<algorithm selection scheme>"),
              "('makespan', 'energy')")
             ;
 
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
 
     // Add all specified scheduling algorithms in oder to the scheduler
-    std::vector<int> algorithm_index_list;
+    std::vector<unsigned long> algorithm_index_list;
     {
         auto tokens = SimpleStandardJobScheduler::stringSplit(algorithm_list, ',');
 
@@ -194,7 +194,10 @@ int main(int argc, char **argv) {
     // Algorithms
     std::sort(algorithm_index_list.begin(), algorithm_index_list.end());
     std::vector<std::string> algorithm_index_string_list;
-    for (const auto &i : algorithm_index_list) { algorithm_index_string_list.push_back(std::to_string(i)); }
+    algorithm_index_string_list.reserve(algorithm_index_list.size());
+    for (const auto &i : algorithm_index_list) {
+        algorithm_index_string_list.push_back(std::to_string(i));
+    }
     output_json["algorithms"] =  std::accumulate(algorithm_index_string_list.begin(), algorithm_index_string_list.end(), std::string(""),
                                                  [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
     // Workflow
@@ -207,7 +210,7 @@ int main(int argc, char **argv) {
     output_json["periodic_scheduler_change_trigger"] = periodic_scheduler_change_trigger;
     output_json["speculative_work_fraction"] = speculative_work_fraction;
     output_json["simulation_noise"] = simulation_noise;
-    output_json["noise_seed"] = noise_seed;
+    output_json["simulation_noise_seed"] = simulation_noise_seed;
 
 
     if (vm.count("print_JSON")) {
@@ -290,7 +293,7 @@ int main(int argc, char **argv) {
             new SimpleWMS(scheduler,
                           workflow,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise_scheme, simulation_noise, noise_seed,
+                          simulation_noise_scheme, simulation_noise, simulation_noise_seed,
                           algorithm_selection_scheme,
                           compute_services, storage_services, file_registry_service, wms_host));
 
@@ -319,7 +322,7 @@ int main(int argc, char **argv) {
 
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
-    std::string alg_sequence = "";
+    std::string alg_sequence;
     for (auto const &a : wms->getAlgorithmSequence()) {
         alg_sequence += std::to_string(a) + ",";
     }
@@ -338,7 +341,8 @@ int main(int argc, char **argv) {
     output_json["energy_consumed"] = energy;
 
 
-    std::cout << output_json.dump() << std::endl;
+//    std::cout << output_json.dump() << std::endl;
+    std::cout << output_json["makespan"] << std::endl;
 
 
 //    std::cerr << workflow->getCompletionDate() << "\n";
