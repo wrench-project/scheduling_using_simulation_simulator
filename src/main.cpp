@@ -212,6 +212,8 @@ int main(int argc, char **argv) {
     output_json["simulation_noise"] = simulation_noise;
     output_json["simulation_noise_seed"] = simulation_noise_seed;
 
+    output_json["simulation_noise_scheme"] = simulation_noise_scheme;
+    output_json["algorithm_selection_scheme"] = algorithm_selection_scheme;
 
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
@@ -341,9 +343,7 @@ int main(int argc, char **argv) {
     output_json["energy_consumed"] = energy;
 
 
-//    std::cout << output_json.dump() << std::endl;
-    std::cout << output_json["makespan"] << std::endl;
-
+    std::cout << output_json.dump() << std::endl;
 
 //    std::cerr << workflow->getCompletionDate() << "\n";
 
