@@ -178,7 +178,16 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
 
 void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
+    WRENCH_INFO("GOT A BUNCH OF READY TASKS TO SCEHDULE: ");
+    for (auto const &rt: tasks) {
+        std::cerr << "READY TASK: " << rt->getID() << "\n";
+    }
+
     prioritizeTasks(tasks);
+    WRENCH_INFO("AFTER PRIORITIZATION: ");
+    for (auto const &rt: tasks) {
+        std::cerr << "READY TASK: " << rt->getID() << "\n";
+    }
 
     int num_scheduled_tasks = 0;
     for (const auto &task : tasks) {
@@ -189,7 +198,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         unsigned long picked_num_cores;
 
         if (not scheduleTask(task, &picked_service, picked_host, &picked_num_cores)) {
-            WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
+//            WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
             continue;
         }
 

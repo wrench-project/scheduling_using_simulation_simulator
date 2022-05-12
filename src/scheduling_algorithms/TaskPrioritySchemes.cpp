@@ -55,6 +55,7 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
 
         double a_bl = this->bottom_levels[a];
         double b_bl = this->bottom_levels[b];
+        std::cerr << "IN COMPARISON: " << a->getID() << ":" << a_bl << " " << b->getID() << ":" << b_bl << "\n";
 
         if (a_bl < b_bl) {
             return true;
