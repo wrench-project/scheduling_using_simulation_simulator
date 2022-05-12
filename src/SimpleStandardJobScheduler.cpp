@@ -178,21 +178,21 @@ bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTa
 
 void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
-    WRENCH_INFO("GOT A BUNCH OF READY TASKS TO SCEHDULE: ");
-    for (auto const &rt: tasks) {
-        std::cerr << "READY TASK: " << rt->getID() << "\n";
-    }
+//    std::cerr << "GOT A BUNCH OF READY TASKS TO SCEHDULE: \n";
+//    for (auto const &rt: tasks) {
+//        std::cerr << "READY TASK: " << rt->getID() << ": NC = " << rt->getNumberOfChildren() <<"\n";
+//    }
 
     prioritizeTasks(tasks);
-    WRENCH_INFO("AFTER PRIORITIZATION: ");
-    for (auto const &rt: tasks) {
-        std::cerr << "READY TASK: " << rt->getID() << "\n";
-    }
+//    std::cerr << "AFTER PRIORITIZATION: \n";
+//    for (auto const &rt: tasks) {
+//        std::cerr << "READY TASK: " << rt->getID() << ": NC = " << rt->getNumberOfChildren() <<"\n";
+//    }
 
     int num_scheduled_tasks = 0;
     for (const auto &task : tasks) {
 
-        WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
+//        WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
         std::shared_ptr<wrench::BareMetalComputeService> picked_service;
         std::string picked_host;
         unsigned long picked_num_cores;

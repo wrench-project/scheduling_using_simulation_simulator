@@ -22,9 +22,9 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
     this->task_priority_schemes["most_flops"] = [](const std::shared_ptr<wrench::WorkflowTask> a,
                                                    const std::shared_ptr<wrench::WorkflowTask> b) -> bool {
         if (a->getFlops() < b->getFlops()) {
-            return true;
-        } else if (a->getFlops() > b->getFlops()) {
             return false;
+        } else if (a->getFlops() > b->getFlops()) {
+            return true;
         } else {
             return (a->getID() < b->getID());
         }
@@ -41,9 +41,9 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         }
 
         if (a_bytes < b_bytes) {
-            return true;
-        } else if (a_bytes > b_bytes) {
             return false;
+        } else if (a_bytes > b_bytes) {
+            return true;
         } else {
             return (a->getID() < b->getID());
         }
@@ -57,9 +57,9 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         double b_bl = this->bottom_levels[b];
 
         if (a_bl < b_bl) {
-            return true;
-        } else if (a_bl > b_bl) {
             return false;
+        } else if (a_bl > b_bl) {
+            return true;
         } else {
             return (a->getID() < b->getID());
         }
@@ -73,9 +73,9 @@ void SimpleStandardJobScheduler::initTaskPrioritySchemes() {
         double b_num_children = b->getNumberOfChildren();
 
         if (a_num_children < b_num_children) {
-            return true;
-        } else if (a_num_children > b_num_children) {
             return false;
+        } else if (a_num_children > b_num_children) {
+            return true;
         } else {
             return (a->getID() < b->getID());
         }
