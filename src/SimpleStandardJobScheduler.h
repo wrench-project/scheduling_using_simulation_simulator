@@ -73,15 +73,15 @@ private:
 
     unsigned long current_scheduling_algorithm = 0;
 
-    std::unordered_map<std::string, std::function<bool(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::WorkflowTask> b)>> task_priority_schemes;
-    std::unordered_map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> service_selection_schemes;
-    std::unordered_map<std::string, std::function<unsigned long(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
+    std::map<std::string, std::function<bool(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::WorkflowTask> b)>> task_priority_schemes;
+    std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> service_selection_schemes;
+    std::map<std::string, std::function<unsigned long(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
 
 
     std::shared_ptr<wrench::FileRegistryService> file_registry_service;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
-    std::unordered_map<std::shared_ptr<wrench::BareMetalComputeService>, std::shared_ptr<wrench::StorageService>> map_compute_to_storage;
+    std::map<std::shared_ptr<wrench::BareMetalComputeService>, std::shared_ptr<wrench::StorageService>> map_compute_to_storage;
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::string wms_host;

@@ -27,7 +27,7 @@ SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
         for (auto const &f : this->service_selection_schemes) {
             if (f.first == "random") continue;
             for (auto const &g : this->core_selection_schemes) {
-            if (g.first == "random") continue;
+                if (g.first == "random") continue;
                 this->scheduling_algorithms_index_to_tuple[index] =  std::make_tuple(e.first, f.first, g.first);
                 index++;
             }
