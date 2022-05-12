@@ -227,12 +227,13 @@ int SimpleWMS::main() {
 
 //                std::cerr << "ARGMIN = " << argmin << "\n";
 
+                double makespan = std::get<0>(makespans_and_energies.at(argmin));
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
                 this->algorithm_sequence.push_back(algorithm_index);
                 std::cerr << "Switching to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << "\n";
+                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << " (makespan = " << makespan << ")\n";
 
                 this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }
