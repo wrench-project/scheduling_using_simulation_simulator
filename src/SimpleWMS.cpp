@@ -210,9 +210,9 @@ int SimpleWMS::main() {
             }
 
             if (not this->i_am_speculative) {
-//                for (int i=0; i < makespans_and_energies.size(); i++) {
-//                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
-//                }
+                for (int i=0; i < makespans_and_energies.size(); i++) {
+                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
+                }
                 unsigned long argmin;
                 if (this->algorithm_selection_scheme == "makespan") {
                     argmin = std::min_element(makespans_and_energies.begin(), makespans_and_energies.end(),
@@ -238,7 +238,6 @@ int SimpleWMS::main() {
                 } else if (this->algorithm_selection_scheme == "makespan_given_energy_bound") {
                     argmin = ULONG_MAX;
                     for (int i=0; i < makespans_and_energies.size(); i++) {
-                        std::cerr << "i = " << i << "   argmin = " << argmin << "\n";
                         if (makespans_and_energies.at(i).second > this->energy_bound) {
                             continue;
                         }
@@ -260,15 +259,15 @@ int SimpleWMS::main() {
                     throw std::runtime_error("Unknown algorithm selection scheme: " + this->algorithm_selection_scheme);
                 }
 
-                std::cerr << "ARGMIN = " << argmin << "\n";
-                std::cerr << "SIZE = " << makespans_and_energies.size() << "\n";
                 double makespan = std::get<0>(makespans_and_energies.at(argmin));
+                double energy = std::get<1>(makespans_and_energies.at(argmin));
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
                 this->algorithm_sequence.push_back(algorithm_index);
                 std::cerr << "Switching to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << " (makespan = " << makespan << ")\n";
+                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << " (makespan = " << makespan << ") " <<
+                          "(energy = " << energy << ")\n";
 
                 this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }

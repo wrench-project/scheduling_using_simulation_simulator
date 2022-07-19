@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
              "Path to JSON workflow description file\n")
             ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
-            ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:bw,#nodes:#cores:flops:bw,..."),
+            ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:bw,#nodes:#cores:flops:watts:bw,..."),
              "Cluster specifications. Example: \"100:8:120Gf:100MBps,10:4:200Gf:25MBps\"\n")
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
@@ -255,7 +255,8 @@ int main(int argc, char **argv) {
         auto parsed_spec = PlatformCreator::parseClusterSpecification(spec);
         int num_hosts = std::get<0>(parsed_spec);
 //        int num_cores = std::get<1>(parsed_spec);
-        std::string flops = std::get<2>(parsed_spec);
+//        std::string flops = std::get<2>(parsed_spec);
+//        std::string watts = std::get<3>(parsed_spec);
 
         std::string head_node = name+"-head";
         std::vector<std::string> compute_nodes;

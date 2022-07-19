@@ -68,6 +68,23 @@ void SimpleStandardJobScheduler::initServiceSelectionSchemes() {
         return picked;
     };
 
+    this->service_selection_schemes["lowest_watts"] = [] (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+        std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
+        double picked_watts = -1.0;
+        for (auto const &s : services) {
+            auto s4u_host = simgrid::s4u::Host::by_name(s->getPhysicalHostname());
+            auto wattage_per_state = s4u_host->get_property("wattage_per_state");
+            auto tokens = SimpleStandardJobScheduler::stringSplit(wattage_per_state, ',');
+            double watts = std::atof(SimpleStandardJobScheduler::stringSplit(tokens.at(0), ':').at(1).c_str());
+
+            if ((picked == nullptr) or (watts < picked_watts)) {
+                picked = s;
+                picked_watts = watts;
+            }
+        }
+        return picked;
+    };
+
     this->service_selection_schemes["random"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         auto picked = this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % services.size();
         for (auto const &s : services) {

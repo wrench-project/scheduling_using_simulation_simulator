@@ -23,88 +23,86 @@ PlatformCreator::create_wms(const sg4::NetZone* root, std::string name, std::str
 
 std::tuple<sg4::NetZone*, simgrid::kernel::routing::NetPoint*, sg4::Link *>
 PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root, std::string spec) {
-    {
 
-        auto parsed_spec = PlatformCreator::parseClusterSpecification(spec);
-        int num_hosts = std::get<0>(parsed_spec);
-        int num_cores = std::get<1>(parsed_spec);
-        std::string flops = std::get<2>(parsed_spec);
-        std::string bandwidth = std::get<3>(parsed_spec);
+    auto parsed_spec = PlatformCreator::parseClusterSpecification(spec);
+    int num_hosts = std::get<0>(parsed_spec);
+    int num_cores = std::get<1>(parsed_spec);
+    std::string flops = std::get<2>(parsed_spec);
+    std::string watts = std::get<3>(parsed_spec);
+    std::string bandwidth = std::get<4>(parsed_spec);
 
-        auto* cluster      = sg4::create_star_zone(name);
-        cluster->set_parent(root);
+    auto* cluster      = sg4::create_star_zone(name);
+    cluster->set_parent(root);
 
-        /* create the backbone link */
-        const sg4::Link* l_bb = cluster->create_link("backbone-" + name, "100Gbps")->seal();
-        sg4::LinkInRoute backbone(l_bb);
+    /* create the backbone link */
+    const sg4::Link* l_bb = cluster->create_link("backbone-" + name, "100Gbps")->seal();
+    sg4::LinkInRoute backbone(l_bb);
 
-        /* create all hosts and connect them to outside world */
-        for (int i=-1; i < num_hosts; i++) {
-            std::string hostname;
-            if (i == -1) {
-                hostname = name + "-head";
-            } else {
-                hostname = name + "-node-" + std::to_string(i);
+    /* create all hosts and connect them to outside world */
+    for (int i=-1; i < num_hosts; i++) {
+        std::string hostname;
+        if (i == -1) {
+            hostname = name + "-head";
+        } else {
+            hostname = name + "-node-" + std::to_string(i);
+        }
+        /* create host */
+        double flop_number = atof(flops.c_str()); // Will remove the units!
+        std::string flop_unit;
+        for (char c : flops) {
+            if (((c >= '0') and (c <= '9')) or (c == '.')) {
+                continue;
             }
-            /* create host */
-            double flop_number = atof(flops.c_str()); // Will remove the units!
-            std::string flop_unit;
-            for (char c : flops) {
-                if (((c >= '0') and (c <= '9')) or (c == '.')) {
-                    continue;
-                }
-                flop_unit += c;
-            }
-
-            std::vector<std::string> speed_per_pstate;
-            int half_num_pstates = 100;
-            for (int j=1; j < 2*half_num_pstates; j++) {
-                double pstate_speed = flop_number * (1.0 - (double)(half_num_pstates - j)/half_num_pstates);
-                speed_per_pstate.push_back(std::to_string(pstate_speed)+flop_unit);
-            }
-
-            auto host = cluster->create_host(hostname, speed_per_pstate);
-
-            host->set_core_count(num_cores);
-            std::string wattage_per_state_value;
-            for (int j=0; j < speed_per_pstate.size(); j++) {
-                // TODO: Is 10,100 a good idea?
-                wattage_per_state_value += std::string("10.00:100.00") + (j < speed_per_pstate.size() - 1 ? "," : "");
-            }
-
-            host->set_property("wattage_per_state", wattage_per_state_value);
-            host->set_property("wattage_off", "0.0");
-
-            /* Create disks on the head host */
-            if (i == -1) {
-                auto disk1 = host->create_disk(name + "-fs",
-                                               "100MBps",
-                                               "100MBps");
-                disk1->set_property("size", "5000GiB");
-                disk1->set_property("mount", "/");
-                auto disk2 = host->create_disk(name + "-scratch",
-                                               "100MBps",
-                                               "100MBps");
-                disk2->set_property("size", "5000GiB");
-                disk2->set_property("mount", "/scratch");
-            }
-
-            /* create UP/DOWN link */
-            const sg4::Link* link = cluster->create_split_duplex_link(hostname, "100GBps")->set_latency("10us")->seal();
-
-            /* add link and backbone for communications from the host */
-            cluster->add_route(host->get_netpoint(), nullptr, nullptr, nullptr,
-                               {{link, sg4::LinkInRoute::Direction::UP}, backbone}, true);
+            flop_unit += c;
         }
 
-        /* create router */
-        auto* router = cluster->create_router(name + "-router");
+        std::vector<std::string> speed_per_pstate;
+        int half_num_pstates = 100;
+        for (int j=1; j < 2*half_num_pstates; j++) {
+            double pstate_speed = flop_number * (1.0 - (double)(half_num_pstates - j)/half_num_pstates);
+            speed_per_pstate.push_back(std::to_string(pstate_speed)+flop_unit);
+        }
 
-        auto link = cluster->create_link(name+"-link", bandwidth)->set_latency("20us");
-        cluster->seal();
+        auto host = cluster->create_host(hostname, speed_per_pstate);
 
-        return std::make_tuple(cluster, router, link);
+        host->set_core_count(num_cores);
+        std::string wattage_per_state_value;
+        for (int j=0; j < speed_per_pstate.size(); j++) {
+            wattage_per_state_value += std::string("10.00:" + watts) + (j < speed_per_pstate.size() - 1 ? "," : "");
+        }
+
+        host->set_property("wattage_per_state", wattage_per_state_value);
+        host->set_property("wattage_off", "0.0");
+
+        /* Create disks on the head host */
+        if (i == -1) {
+            auto disk1 = host->create_disk(name + "-fs",
+                                           "100MBps",
+                                           "100MBps");
+            disk1->set_property("size", "5000GiB");
+            disk1->set_property("mount", "/");
+            auto disk2 = host->create_disk(name + "-scratch",
+                                           "100MBps",
+                                           "100MBps");
+            disk2->set_property("size", "5000GiB");
+            disk2->set_property("mount", "/scratch");
+        }
+
+        /* create UP/DOWN link */
+        const sg4::Link* link = cluster->create_split_duplex_link(hostname, "100GBps")->set_latency("10us")->seal();
+
+        /* add link and backbone for communications from the host */
+        cluster->add_route(host->get_netpoint(), nullptr, nullptr, nullptr,
+                           {{link, sg4::LinkInRoute::Direction::UP}, backbone}, true);
     }
+
+    /* create router */
+    auto* router = cluster->create_router(name + "-router");
+
+    auto link = cluster->create_link(name+"-link", bandwidth)->set_latency("20us");
+    cluster->seal();
+
+    return std::make_tuple(cluster, router, link);
 }
 
 void PlatformCreator::create_platform() const {
@@ -171,10 +169,10 @@ void PlatformCreator::create_platform() const {
 
 
 
-std::tuple<int, int, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
+std::tuple<int, int, std::string, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
     auto tokens = SimpleStandardJobScheduler::stringSplit(spec, ':');
 
-    if (tokens.size() != 4) {
+    if (tokens.size() != 5) {
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }
     int num_hosts;
@@ -186,6 +184,7 @@ std::tuple<int, int, std::string, std::string> PlatformCreator::parseClusterSpec
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }
     auto flops = tokens.at(2);
-    auto bandwidth = tokens.at(3);
-    return std::make_tuple(num_hosts, num_cores, flops, bandwidth);
+    auto watts = tokens.at(3);
+    auto bandwidth = tokens.at(4);
+    return std::make_tuple(num_hosts, num_cores, flops, watts, bandwidth);
 }

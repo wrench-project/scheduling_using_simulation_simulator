@@ -15,7 +15,7 @@ public:
         create_platform();
     }
 
-    static std::tuple<int, int, std::string, std::string> parseClusterSpecification(std::string spec);
+    static std::tuple<int, int, std::string, std::string, std::string> parseClusterSpecification(std::string spec);
 
 
         private:

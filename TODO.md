@@ -5,5 +5,9 @@
         - [X] for the platform
         - [ ] for both? 
     - [X] Have children report on energy as well as makespan
-    - [ ] Implement a simple scheme
+    - [X] Implement a simple scheme
+    - [X] Add watts to cluster descriptions
+    - [ ] Implement energy-specific resource selection schemes
+            - min watts
+            - min watts / flops
     
