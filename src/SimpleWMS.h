@@ -27,6 +27,7 @@ public:
               std::string &simulation_noise_scheme,
               double simulation_noise,
               int noise_seed,
+              double energy_bound,
               std::string &algorithm_selection_scheme,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
@@ -50,6 +51,7 @@ private:
     std::string simulation_noise_scheme;
     double simulation_noise;
     int noise_seed;
+    double energy_bound;
     std::string algorithm_selection_scheme;
 
     double work_done_since_last_scheduler_change = 0.0;

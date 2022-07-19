@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
     int random_algorithm_seed;
     int simulation_noise_seed;
     std::string algorithm_selection_scheme;
+    double energy_bound;
 
 
     // Define command-line argument options
@@ -101,13 +102,19 @@ int main(int argc, char **argv) {
              "The seed used for the RNG that generates simulation noise "
              "(between 1 and 200000)")
             ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->required()->value_name("<algorithm selection scheme>"),
-             "('makespan', 'energy')")
+             "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')")
+            ("energy_bound", po::value<double>(&energy_bound)->value_name("<energy bound in Joules>")->default_value(-1.0),
+            "An energy bound to not overcome\n")
             ;
 
     // Parse command-line arguments
     po::variables_map vm;
+    po::store(
+            po::parse_command_line(argc, argv, desc),
+            vm
+    );
+
     try {
-        po::store(po::parse_command_line(argc, argv, desc), vm);
         // Print help message and exit if needed
         if (vm.count("help")) {
             std::cerr << desc << "\n";
@@ -135,8 +142,16 @@ int main(int argc, char **argv) {
     }
 
     // Check the algorithm selection scheme
-    if ((algorithm_selection_scheme != "makespan") and (algorithm_selection_scheme != "energy")) {
+    if ((algorithm_selection_scheme != "makespan") and
+        (algorithm_selection_scheme != "energy") and
+        (algorithm_selection_scheme != "makespan_over_energy") and
+        (algorithm_selection_scheme != "makespan_given_energy_bound")) {
         throw std::invalid_argument("Invalid --algorithm_selection_scheme value");
+    }
+
+    // Check the energy bound
+    if ((algorithm_selection_scheme == "makespan_given_energy_bound") and (energy_bound < 0)) {
+        throw std::invalid_argument("A positive energy_bound argument should be provided when using 'makespan_given_energy_bound' algorithm selection scheme");
     }
 
 
@@ -295,7 +310,7 @@ int main(int argc, char **argv) {
             new SimpleWMS(scheduler,
                           workflow,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise_scheme, simulation_noise, simulation_noise_seed,
+                          simulation_noise_scheme, simulation_noise, simulation_noise_seed, energy_bound,
                           algorithm_selection_scheme,
                           compute_services, storage_services, file_registry_service, wms_host));
 

@@ -27,6 +27,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      std::string &simulation_noise_scheme,
                      double simulation_noise,
                      int noise_seed,
+                     double energy_bound,
                      std::string &algorithm_selection_scheme,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
@@ -42,6 +43,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     simulation_noise_scheme(simulation_noise_scheme),
                                                     simulation_noise(simulation_noise),
                                                     noise_seed(noise_seed),
+                                                    energy_bound(energy_bound),
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
                                                     compute_services(std::move(compute_services)),
                                                     storage_services(std::move(storage_services)),
@@ -107,6 +109,7 @@ int SimpleWMS::main() {
     }
     // Compute noisy host pstates and link bandwidth that children will use
     // and thus incur simulation error (for the micro-platform scheme)
+    // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
     std::unordered_map<std::string, int> noisy_host_pstates;
     std::unordered_map<std::string, double> noisy_link_bandwidths;
     if (this->simulation_noise_scheme == "micro-platform") {
@@ -205,6 +208,7 @@ int SimpleWMS::main() {
                     waitpid(pid, &stat_loc, 0);
                 }
             }
+
             if (not this->i_am_speculative) {
 //                for (int i=0; i < makespans_and_energies.size(); i++) {
 //                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
@@ -221,12 +225,43 @@ int SimpleWMS::main() {
                                               [](std::pair<double, double> a, std::pair<double, double> b) {
                                                   return a.second < b.second;
                                               }) - makespans_and_energies.begin();
+                } else if (this->algorithm_selection_scheme == "makespan_over_energy") {
+                    std::vector<double> ratios;
+                    ratios.reserve(makespans_and_energies.size());
+                    for (auto const &me : makespans_and_energies) {
+                        ratios.push_back(me.second / me.first); // compute energy / makespan
+                    }
+                    argmin = std::min_element(ratios.begin(), ratios.end(),
+                                              [](double a, double b) {
+                                                  return a < b;
+                                              }) - ratios.begin();
+                } else if (this->algorithm_selection_scheme == "makespan_given_energy_bound") {
+                    argmin = ULONG_MAX;
+                    for (int i=0; i < makespans_and_energies.size(); i++) {
+                        std::cerr << "i = " << i << "   argmin = " << argmin << "\n";
+                        if (makespans_and_energies.at(i).second > this->energy_bound) {
+                            continue;
+                        }
+                        if (argmin == ULONG_MAX) {
+                            argmin = i;
+                        } else {
+                            if (makespans_and_energies.at(argmin).first > makespans_and_energies.at(i).first) {
+                                argmin = i;
+                            }
+                        }
+                    }
+                    if (argmin == ULONG_MAX) {
+                        // A Makespan of -1 will be returned, somehow!
+                        std::cerr << "Not suitable algorithm was found because none can meet the energy bound\n";
+                        return 1;
+                    }
+
                 } else {
                     throw std::runtime_error("Unknown algorithm selection scheme: " + this->algorithm_selection_scheme);
                 }
 
-//                std::cerr << "ARGMIN = " << argmin << "\n";
-
+                std::cerr << "ARGMIN = " << argmin << "\n";
+                std::cerr << "SIZE = " << makespans_and_energies.size() << "\n";
                 double makespan = std::get<0>(makespans_and_energies.at(argmin));
                 unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
 
@@ -275,7 +310,7 @@ int SimpleWMS::main() {
                 energy += this->simulation->getEnergyConsumed(h);
             }
         }
-        // Send it back to the papent
+        // Send it back to the parent
         write(pipefd[1], &energy, sizeof(double));
         close(pipefd[1]);
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
