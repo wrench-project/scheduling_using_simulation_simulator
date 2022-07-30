@@ -7,7 +7,8 @@
     - [X] Have children report on energy as well as makespan
     - [X] Implement a simple scheme
     - [X] Add watts to cluster descriptions
-    - [ ] Implement energy-specific resource selection schemes
-            - min watts
-            - min watts / flops
+    - [X] Implement energy-specific resource selection schemes
+            [X] min watts
+            [X] min watts / flops
+    - [ ] Come up with an idea for experiments/paper
     
