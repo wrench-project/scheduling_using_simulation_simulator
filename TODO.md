@@ -11,4 +11,6 @@
             [X] min watts
             [X] min watts / flops
     - [ ] Come up with an idea for experiments/paper
+      - [ ] We need to have some resource exclusion scheme? 
+            Perhaps just have a maximum number of hosts to use, which is a configuration parameter of the scheduling scheme? Or perhaps just some fraction of the available compute nodes? Or a fraction of the total node * cores * GHz
     

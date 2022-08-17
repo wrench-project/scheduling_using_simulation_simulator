@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
             ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
             ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:bw,#nodes:#cores:flops:watts:bw,..."),
-             "Cluster specifications. Example: \"100:8:120Gf:100MBps,10:4:200Gf:25MBps\"\n")
+             "Cluster specifications. Example: \"100:8:120Gf:200.0:100MBps,10:4:200Gf:100.0:25MBps\"\n")
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
             ("print_JSON",

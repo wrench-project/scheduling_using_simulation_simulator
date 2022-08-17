@@ -210,9 +210,9 @@ int SimpleWMS::main() {
             }
 
             if (not this->i_am_speculative) {
-                for (int i=0; i < makespans_and_energies.size(); i++) {
-                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
-                }
+//                for (int i=0; i < makespans_and_energies.size(); i++) {
+//                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
+//                }
                 unsigned long argmin;
                 if (this->algorithm_selection_scheme == "makespan") {
                     argmin = std::min_element(makespans_and_energies.begin(), makespans_and_energies.end(),

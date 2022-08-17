@@ -66,6 +66,8 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
         auto host = cluster->create_host(hostname, speed_per_pstate);
 
         host->set_core_count(num_cores);
+
+        // Creating pstates as a trick to make it possible to inject platform noise (i.e., wrong flop rates)
         std::string wattage_per_state_value;
         for (int j=0; j < speed_per_pstate.size(); j++) {
             wattage_per_state_value += std::string("10.00:" + watts) + (j < speed_per_pstate.size() - 1 ? "," : "");
