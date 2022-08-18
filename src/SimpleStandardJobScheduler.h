@@ -12,6 +12,13 @@
 
 #include <wrench-dev.h>
 
+#define TASK_MIN_NUM_CORES(task) 1
+#define TASK_MAX_NUM_CORES(task) 32
+
+//#define TASK_MIN_NUM_CORES(task) task->getMinNumCores()
+//#define TASK_MAX_NUM_CORES(task) task->getMaxNumCores()
+
+
 class SimpleStandardJobScheduler {
 
 public:

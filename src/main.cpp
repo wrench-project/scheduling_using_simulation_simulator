@@ -300,6 +300,8 @@ int main(int argc, char **argv) {
     file_registry_service->setNetworkTimeoutValue(DBL_MAX);
 
     // Parse the workflow
+    // As a performance optimization, in this whole simulator, instead of calling getMinNumCores() and getMaxNumCores(), we just
+    // hardcode 1 and 32. Check out the macros.
     auto workflow = wrench::WfCommonsWorkflowParser::createWorkflowFromJSON(
             workflow_file, reference_flops, false, 1, 32, true);
 

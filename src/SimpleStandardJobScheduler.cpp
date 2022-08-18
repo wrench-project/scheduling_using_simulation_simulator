@@ -112,7 +112,7 @@ bool SimpleStandardJobScheduler::taskCanRunOn(std::shared_ptr<wrench::WorkflowTa
 #if 0
     auto idle_cores = service->getPerHostNumIdleCores();
     for (auto const &spec : idle_cores) {
-        if (spec.second >= task->getMinNumCores()) {
+        if (spec.second >= TASK_MIN_NUM_CORES(task)) {
             return true;
         }
     }
@@ -120,7 +120,7 @@ bool SimpleStandardJobScheduler::taskCanRunOn(std::shared_ptr<wrench::WorkflowTa
     return false;
 #else
     for (auto const &entry : this->idle_cores_map[service]) {
-        if (entry.second >= task->getMinNumCores()) {
+        if (entry.second >= TASK_MIN_NUM_CORES(task)) {
             return true;
         }
     }

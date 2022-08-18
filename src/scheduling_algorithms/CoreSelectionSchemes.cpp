@@ -38,7 +38,7 @@ unsigned long pickNumCoresWithBoundedEfficiency(SimpleStandardJobScheduler *sche
 void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
 
 //    this->core_selection_schemes["minimum"] = [] (const wrench::WorkflowTask* task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
-//        return (task->getMinNumCores());
+//        return TASK_MIN_NUM_CORES(task);
 //    };
 
     this->core_selection_schemes["as_many_as_possible"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
@@ -49,10 +49,10 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
         for (auto const &h : idle_cores) {
             max = std::max<unsigned long>(max, h.second);
         }
-        if (max < task->getMinNumCores()) {
+        if (max < TASK_MIN_NUM_CORES(task)) {
             throw std::runtime_error("Core selection scheme (AS MANY AS POSSIBLE): A potential compute service doesn't have enough cores - this shouldn't happen");
         }
-        return std::min<unsigned long>(max, task->getMaxNumCores());
+        return std::min<unsigned long>(max, TASK_MAX_NUM_CORES(task));
     };
 
     this->core_selection_schemes["parallel_efficiency_fifty_percent"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
@@ -70,10 +70,10 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
         for (auto const &h : idle_cores) {
             max = std::max<unsigned long>(max, h.second);
         }
-        if (max < task->getMinNumCores()) {
+        if (max < TASK_MIN_NUM_CORES(task)) {
             throw std::runtime_error("Core selection scheme (RANDOM): A potential compute service doesn't have enough cores - this shouldn't happen");
         }
-        max = std::min<unsigned long>(max, task->getMaxNumCores());
+        max = std::min<unsigned long>(max, TASK_MAX_NUM_CORES(task));
         return 1 + this->random_dist_for_random_algorithm(this->rng_for_random_algorithm) % max;
     };
 
