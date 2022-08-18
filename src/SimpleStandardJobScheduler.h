@@ -46,10 +46,10 @@ public:
     std::string getCoreSelectionSchemeDocumentation();
     void printAllSchemes();
 
-    static std::vector<std::string> stringSplit(std::string str, char sep);
+    static std::vector<std::string> stringSplit(const std::string& str, char sep);
 
-    void computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow);
-    void computeNumberOfChildren(std::shared_ptr<wrench::Workflow> workflow);
+    void computeBottomLevels(const std::shared_ptr<wrench::Workflow>& workflow);
+    void computeNumbersOfChildren(const std::shared_ptr<wrench::Workflow>& workflow);
 
 
     void setRandomAlgorithmSeed(int seed) { this->rng_for_random_algorithm.seed(seed);}
@@ -58,23 +58,23 @@ public:
 
 private:
 
-    void computeTaskBottomLevel(std::shared_ptr<wrench::WorkflowTask> task);
+    void computeTaskBottomLevel(const std::shared_ptr<wrench::WorkflowTask>& task);
 
     void initTaskPrioritySchemes();
     void initServiceSelectionSchemes();
     void initCoreSelectionSchemes();
 
     void prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> &tasks);
-    bool scheduleTask(std::shared_ptr<wrench::WorkflowTask> task,
+    bool scheduleTask(const std::shared_ptr<wrench::WorkflowTask>& task,
                       std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
                       std::string &picked_host,
                       unsigned long *picked_num_cores);
 
 
     std::shared_ptr<wrench::FileLocation> pick_location(const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
-                                                        std::shared_ptr<wrench::DataFile> file);
+                                                        const std::shared_ptr<wrench::DataFile>& file);
 
-    bool taskCanRunOn(std::shared_ptr<wrench::WorkflowTask> task, std::shared_ptr<wrench::BareMetalComputeService> service);
+    bool taskCanRunOn(const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service);
 
     std::vector<unsigned long> enabled_scheduling_algorithms;
     std::

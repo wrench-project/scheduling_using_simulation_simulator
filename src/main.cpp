@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
-    scheduler->computeNumberOfChildren(workflow);
+    scheduler->computeNumbersOfChildren(workflow);
 
     // Create the WMS
     auto wms = simulation->add(

@@ -51,7 +51,7 @@ void SimpleStandardJobScheduler::init(
     this->storage_services = std::move(_storage_services);
     this->compute_services = std::move(_compute_services);
     this->file_registry_service = std::move(_file_registry_service);
-    this->wms_host = wms_host;
+    this->wms_host = std::move(wms_host);
 
     // Create compute/storage map
     for (auto const &cs : this->compute_services) {
@@ -72,7 +72,7 @@ void SimpleStandardJobScheduler::init(
 
 std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location(
         const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
-        std::shared_ptr<wrench::DataFile> file) {
+        const std::shared_ptr<wrench::DataFile>& file) {
 
     auto entries = this->file_registry_service->lookupEntry(file);
     if (entries.empty()) {
@@ -107,7 +107,7 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
 
 }
 
-bool SimpleStandardJobScheduler::taskCanRunOn(std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) {
+bool SimpleStandardJobScheduler::taskCanRunOn(const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service) {
 
 #if 0
     auto idle_cores = service->getPerHostNumIdleCores();
@@ -136,7 +136,7 @@ void SimpleStandardJobScheduler::prioritizeTasks(std::vector<std::shared_ptr<wre
 }
 
 /** Returns true if found something **/
-bool SimpleStandardJobScheduler::scheduleTask(std::shared_ptr<wrench::WorkflowTask> task,
+bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::WorkflowTask>& task,
                                               std::shared_ptr<wrench::BareMetalComputeService> *picked_service,
                                               std::string &picked_host,
                                               unsigned long *picked_num_cores) {
@@ -283,7 +283,7 @@ std::string SimpleStandardJobScheduler::schedulingAlgorithmToString(unsigned lon
 }
 
 
-std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::string str, char sep) {
+std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::string& str, char sep) {
     stringstream ss(str);
     std::vector<std::string> tokens;
     string item;
@@ -293,21 +293,21 @@ std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::stri
     return tokens;
 }
 
-void SimpleStandardJobScheduler::computeNumberOfChildren(std::shared_ptr<wrench::Workflow> workflow) {
+void SimpleStandardJobScheduler::computeNumbersOfChildren(const std::shared_ptr<wrench::Workflow>& workflow) {
 
     for (auto const &t : workflow->getTasks()) {
         this->number_children[t] =t->getNumberOfChildren();
     }
 }
 
-void SimpleStandardJobScheduler::computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow) {
+void SimpleStandardJobScheduler::computeBottomLevels(const std::shared_ptr<wrench::Workflow>& workflow) {
 
     for (auto const &t : workflow->getEntryTasks()) {
         computeTaskBottomLevel(t);
     }
 }
 
-void SimpleStandardJobScheduler::computeTaskBottomLevel(std::shared_ptr<wrench::WorkflowTask> task) {
+void SimpleStandardJobScheduler::computeTaskBottomLevel(const std::shared_ptr<wrench::WorkflowTask>& task) {
 
     if (this->bottom_levels.find(task) != this->bottom_levels.end()) {
         return;

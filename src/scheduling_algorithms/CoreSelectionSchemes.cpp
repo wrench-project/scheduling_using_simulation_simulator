@@ -14,7 +14,7 @@
 
 XBT_LOG_NEW_DEFAULT_CATEGORY(scheduling_algorithms_core_selection_schemes, "Log category for core selection schemes");
 
-unsigned long pickNumCoresWithBoundedEfficiency(SimpleStandardJobScheduler *scheduler, const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service, double efficiency_bound) {
+unsigned long pickNumCoresWithBoundedEfficiency(SimpleStandardJobScheduler *scheduler, const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service, double efficiency_bound) {
 //    auto idle_cores = service->getPerHostNumIdleCores();
     auto idle_cores = scheduler->idle_cores_map[service];
     unsigned long max = 0;
@@ -41,7 +41,7 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
 //        return TASK_MIN_NUM_CORES(task);
 //    };
 
-    this->core_selection_schemes["as_many_as_possible"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+    this->core_selection_schemes["as_many_as_possible"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service) -> unsigned long {
 //        auto idle_cores = service->getPerHostNumIdleCores();
         auto idle_cores = this->idle_cores_map[service];
 
@@ -55,15 +55,15 @@ void SimpleStandardJobScheduler::initCoreSelectionSchemes() {
         return std::min<unsigned long>(max, TASK_MAX_NUM_CORES(task));
     };
 
-    this->core_selection_schemes["parallel_efficiency_fifty_percent"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+    this->core_selection_schemes["parallel_efficiency_fifty_percent"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service) -> unsigned long {
         return pickNumCoresWithBoundedEfficiency(this, task, service, 0.5);
     };
 
-    this->core_selection_schemes["parallel_efficiency_ninety_percent"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+    this->core_selection_schemes["parallel_efficiency_ninety_percent"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service) -> unsigned long {
         return pickNumCoresWithBoundedEfficiency(this, task, service, 0.9);
     };
 
-    this->core_selection_schemes["random"] = [this] (const std::shared_ptr<wrench::WorkflowTask> task, const std::shared_ptr<wrench::BareMetalComputeService> service) -> unsigned long {
+    this->core_selection_schemes["random"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service) -> unsigned long {
 //        auto idle_cores = service->getPerHostNumIdleCores();
         auto idle_cores = this->idle_cores_map[service];
         unsigned long max = 0;
