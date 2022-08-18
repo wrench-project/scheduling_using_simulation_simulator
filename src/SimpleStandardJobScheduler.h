@@ -42,6 +42,8 @@ public:
     static std::vector<std::string> stringSplit(std::string str, char sep);
 
     void computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow);
+    void computeNumberOfChildren(std::shared_ptr<wrench::Workflow> workflow);
+
 
     void setRandomAlgorithmSeed(int seed) { this->rng_for_random_algorithm.seed(seed);}
 
@@ -87,6 +89,7 @@ private:
     std::string wms_host;
 
     std::map<std::shared_ptr<wrench::WorkflowTask>, double> bottom_levels;
+    std::map<std::shared_ptr<wrench::WorkflowTask>, unsigned long> number_children;
 
     std::uniform_int_distribution<unsigned long> random_dist_for_random_algorithm;
     std::mt19937 rng_for_random_algorithm;

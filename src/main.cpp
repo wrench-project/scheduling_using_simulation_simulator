@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
                 new wrench::SimpleStorageService(
                         head_node,
                         {"/"},
-                        {},
+                        {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}},
                         {})));
     }
 
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {}, {}));
+    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
@@ -305,6 +305,7 @@ int main(int argc, char **argv) {
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
+    scheduler->computeNumberOfChildren(workflow);
 
     // Create the WMS
     auto wms = simulation->add(

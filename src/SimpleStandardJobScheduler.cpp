@@ -293,6 +293,13 @@ std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::stri
     return tokens;
 }
 
+void SimpleStandardJobScheduler::computeNumberOfChildren(std::shared_ptr<wrench::Workflow> workflow) {
+
+    for (auto const &t : workflow->getTasks()) {
+        this->number_children[t] =t->getNumberOfChildren();
+    }
+}
+
 void SimpleStandardJobScheduler::computeBottomLevels(std::shared_ptr<wrench::Workflow> workflow) {
 
     for (auto const &t : workflow->getEntryTasks()) {
