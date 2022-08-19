@@ -46,6 +46,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     noise_seed(noise_seed),
                                                     energy_bound(energy_bound),
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
+                                                    disable_contention(disable_contention),
                                                     compute_services(std::move(compute_services)),
                                                     storage_services(std::move(storage_services)),
                                                     file_registry_service(std::move(file_registry_service))
@@ -281,6 +282,7 @@ int SimpleWMS::main() {
                 this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }
         }
+
 
         if ((this->i_am_speculative) and (this->work_done_since_last_scheduler_change > this->speculative_work_fraction * total_work)) {
             break;

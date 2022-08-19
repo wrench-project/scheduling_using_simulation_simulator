@@ -35,7 +35,8 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
     auto* cluster      = sg4::create_star_zone(name);
     cluster->set_parent(root);
 
-    /* create the backbone link, which is the one on which all disk reads'writes will bottleneck */
+    /* create the backbone link, which is the one on which all disk reads/writes will bottleneck */
+    /* We do it this way so that we can set its sharing policy to FATPIPE when using the --no-contention flag */
     auto l_bb = cluster->create_link("backbone-" + name, io_bandwidth)->seal();
     l_bb->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::SHARED); // probably redundant
     sg4::LinkInRoute backbone(l_bb);
@@ -79,7 +80,7 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
         host->set_property("wattage_off", "0.0");
 
         /* Create disks on the head host */
-        /* note that the bandwidth is huge. This is because I/O will bottleneck
+        /* Note that the bandwidth is huge. This is because I/O will bottleneck
          * on the backbone link, for which we can set the sharing policy to FAT_PIPE
          * so as to implement the --no-contention option!
          */
