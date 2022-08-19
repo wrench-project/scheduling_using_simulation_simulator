@@ -29,13 +29,15 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
     int num_cores = std::get<1>(parsed_spec);
     std::string flops = std::get<2>(parsed_spec);
     std::string watts = std::get<3>(parsed_spec);
-    std::string bandwidth = std::get<4>(parsed_spec);
+    std::string io_bandwidth = std::get<4>(parsed_spec);
+    std::string internet_bandwidth = std::get<5>(parsed_spec);
 
     auto* cluster      = sg4::create_star_zone(name);
     cluster->set_parent(root);
 
-    /* create the backbone link */
-    const sg4::Link* l_bb = cluster->create_link("backbone-" + name, "100Gbps")->seal();
+    /* create the backbone link, which is the one on which all disk reads'writes will bottleneck */
+    auto l_bb = cluster->create_link("backbone-" + name, io_bandwidth)->seal();
+    l_bb->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::SHARED); // probably redundant
     sg4::LinkInRoute backbone(l_bb);
 
     /* create all hosts and connect them to outside world */
@@ -77,15 +79,19 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
         host->set_property("wattage_off", "0.0");
 
         /* Create disks on the head host */
+        /* note that the bandwidth is huge. This is because I/O will bottleneck
+         * on the backbone link, for which we can set the sharing policy to FAT_PIPE
+         * so as to implement the --no-contention option!
+         */
         if (i == -1) {
             auto disk1 = host->create_disk(name + "-fs",
-                                           "100MBps",
-                                           "100MBps");
+                                           "1000TBps",
+                                           "1000TBps");
             disk1->set_property("size", "5000GiB");
             disk1->set_property("mount", "/");
             auto disk2 = host->create_disk(name + "-scratch",
-                                           "100MBps",
-                                           "100MBps");
+                                           "1000TBps",
+                                           "1000TBps");
             disk2->set_property("size", "5000GiB");
             disk2->set_property("mount", "/scratch");
         }
@@ -101,20 +107,20 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
     /* create router */
     auto* router = cluster->create_router(name + "-router");
 
-    auto link = cluster->create_link(name+"-link", bandwidth)->set_latency("20us");
+    auto link = cluster->create_link(name+"-link", internet_bandwidth)->set_latency("20us");
     cluster->seal();
 
     return std::make_tuple(cluster, router, link);
 }
 
-void PlatformCreator::create_platform() const {
+void PlatformCreator::create_platform() {
     // Create the top-level zone
     auto zone = sg4::create_full_zone("AS0");
 
     std::vector<std::tuple<sg4::NetZone*, simgrid::kernel::routing::NetPoint*, sg4::Link *>> zones;
 
     // Create the WMS zone
-    zones.push_back(create_wms(zone, "wms_host", "100MBps"));
+    zones.push_back(this->create_wms(zone, "wms_host", "100MBps"));
 
     // Split the cluster specs into individual specs
     auto tokens = SimpleStandardJobScheduler::stringSplit(this->cluster_specs, ',');
@@ -171,10 +177,10 @@ void PlatformCreator::create_platform() const {
 
 
 
-std::tuple<int, int, std::string, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
+std::tuple<int, int, std::string, std::string, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
     auto tokens = SimpleStandardJobScheduler::stringSplit(spec, ':');
 
-    if (tokens.size() != 5) {
+    if (tokens.size() != 6) {
         throw std::invalid_argument("Invalid cluster specification '" + spec + "'");
     }
     int num_hosts;
@@ -187,6 +193,7 @@ std::tuple<int, int, std::string, std::string, std::string> PlatformCreator::par
     }
     auto flops = tokens.at(2);
     auto watts = tokens.at(3);
-    auto bandwidth = tokens.at(4);
-    return std::make_tuple(num_hosts, num_cores, flops, watts, bandwidth);
+    auto io_bandwidth = tokens.at(4);
+    auto internet_bandwidth = tokens.at(5);
+    return std::make_tuple(num_hosts, num_cores, flops, watts, io_bandwidth, internet_bandwidth);
 }

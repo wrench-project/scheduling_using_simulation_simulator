@@ -20,7 +20,7 @@ as `./scheduling_using_simulation_simulator --help` to see the (long and detaile
 A sample invocation could be:
 
 ```
-./scheduling_using_simulation_simulator --clusters 32:8:100Gf:100.0:100MBps,16:4:50Gf:40.0:200MBps,24:6:80Gf:20.0:80MBps  --workflow ../sample_workflows/genome.json --reference_flops 100Gf  --algorithms 0-8,18,19 --first_scheduler_change_trigger 0.00 --periodic_scheduler_change_trigger 0.1 --speculative_work_fraction 0.1 --wrench-energy-simulation --simulation_noise_scheme macro --algorithm_selection_scheme makespan
+./scheduling_using_simulation_simulator --clusters 32:8:100Gf:100.0:100MBps:100MBps,16:4:50Gf:40.0:100MBps:200MBps,24:6:80Gf:20.0:100MBps:80MBps  --workflow ../sample_workflows/genome.json --reference_flops 100Gf  --algorithms 0-8,18,19 --first_scheduler_change_trigger 0.00 --periodic_scheduler_change_trigger 0.1 --speculative_work_fraction 0.1 --wrench-energy-simulation --simulation_noise_scheme macro --algorithm_selection_scheme makespan
 ```
 
 ## Building the simulator from source

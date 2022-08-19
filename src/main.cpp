@@ -73,8 +73,8 @@ int main(int argc, char **argv) {
              "Path to JSON workflow description file\n")
             ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
-            ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:bw,#nodes:#cores:flops:watts:bw,..."),
-             "Cluster specifications. Example: \"100:8:120Gf:200.0:100MBps,10:4:200Gf:100.0:25MBps\"\n")
+            ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:io_bw:bw,#nodes:#cores:flops:watts:io_bw:internet_bw,..."),
+             "Cluster specifications. Example: \"100:8:120Gf:200.0:100MBps:100MBps,10:4:200Gf:100.0:100MBps:25MBps\"\n")
             ("print_all_algorithms",
              "Print all scheduling algorithms available\n")
             ("print_JSON",
@@ -105,6 +105,8 @@ int main(int argc, char **argv) {
              "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')")
             ("energy_bound", po::value<double>(&energy_bound)->value_name("<energy bound in Joules>")->default_value(-1.0),
             "An energy bound to not overcome\n")
+            ("no-contention",
+             "Disables network contention simulation (every link is a 'FATPIPE' in speculative executions)\n")
             ;
 
     // Parse command-line arguments
@@ -133,6 +135,9 @@ int main(int argc, char **argv) {
 
     // Set the random:random:random algorithm's seed
     scheduler->setRandomAlgorithmSeed(random_algorithm_seed);
+
+    // Disable/enable contention
+    bool disable_contention = vm.count("no-contention") > 0;
 
     // Check the noise scheme
     if (simulation_noise_scheme != "macro" and
@@ -316,6 +321,7 @@ int main(int argc, char **argv) {
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
                           simulation_noise_scheme, simulation_noise, simulation_noise_seed, energy_bound,
                           algorithm_selection_scheme,
+                          disable_contention,
                           compute_services, storage_services, file_registry_service, wms_host));
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
@@ -341,6 +347,10 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    if (wms->i_am_speculative) {
+        exit(0);
+    }
+
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
     std::string alg_sequence;
@@ -361,8 +371,9 @@ int main(int argc, char **argv) {
     }
     output_json["energy_consumed"] = energy;
 
-
     std::cout << output_json.dump() << std::endl;
+    std::cerr << "MAKESPAN: " << output_json["makespan"] << "\n";
+    std::cerr << "ENERGY: " << output_json["energy_consumed"] << "\n";
 
 //    std::cerr << workflow->getCompletionDate() << "\n";
 

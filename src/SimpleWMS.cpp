@@ -29,6 +29,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      int noise_seed,
                      double energy_bound,
                      std::string &algorithm_selection_scheme,
+                     bool disable_contention,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
                      std::shared_ptr<wrench::FileRegistryService> file_registry_service,
@@ -129,6 +130,8 @@ int SimpleWMS::main() {
         }
     }
 
+    /* Main simulation loop */
+
     while (true) {
         // Scheduler change?
 
@@ -188,6 +191,12 @@ int SimpleWMS::main() {
                         for (auto const &l : noisy_link_bandwidths) {
                             simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
                             link->set_bandwidth(l.second);
+                        }
+                    }
+                    // Disable contention if need to
+                    if (this->disable_contention) {
+                        for (auto const &link : simgrid::s4u::Engine::get_instance()->get_all_links()) {
+                            link->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::FATPIPE);
                         }
                     }
 

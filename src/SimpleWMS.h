@@ -29,6 +29,7 @@ public:
               int noise_seed,
               double energy_bound,
               std::string &algorithm_selection_scheme,
+              bool disable_contention,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
               std::shared_ptr<wrench::FileRegistryService> file_registry_service,
@@ -36,8 +37,9 @@ public:
 
     std::vector<unsigned long> getAlgorithmSequence() { return this->algorithm_sequence; }
 
-private:
+    bool i_am_speculative = false;
 
+private:
 
     int main() override;
     void processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) override;
@@ -53,10 +55,10 @@ private:
     int noise_seed;
     double energy_bound;
     std::string algorithm_selection_scheme;
+    bool disable_contention;
 
     double work_done_since_last_scheduler_change = 0.0;
     bool one_schedule_change_has_happened = false;
-    bool i_am_speculative = false;
 
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;
