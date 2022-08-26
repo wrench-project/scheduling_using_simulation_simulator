@@ -34,17 +34,19 @@ public:
             std::shared_ptr<wrench::FileRegistryService> file_registry_service,
             std::string wms_host);
 
-    unsigned long getNumAvailableSchedulingAlgorithms() { return this->scheduling_algorithms_index_to_tuple.size(); }
-    void enableSchedulingAlgorithm(unsigned long index) { this->enabled_scheduling_algorithms.emplace_back(index); }
-    std::vector<unsigned long> getEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms; }
+    void enableTaskSelectionScheme(const std::string& scheme);
+    void enableClusterSelectionScheme(const std::string& scheme);
+    void enableCoreSelectionScheme(const std::string& scheme);
+    void finalizeEnabledAlgorithmList();
+
+    unsigned long getNumAvailableSchedulingAlgorithms() { return this->enabled_scheduling_algorithms.size(); }
+    unsigned long getNumEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms.size(); }
     void useSchedulingAlgorithm(unsigned long scheduler_index) { this->current_scheduling_algorithm = scheduler_index; }
     unsigned long getUsedSchedulingAlgorithm() const { return this->current_scheduling_algorithm; }
     std::string schedulingAlgorithmToString(unsigned long index);
+    std::string algorithmIndexToString(unsigned long);
 
-    std::string getTaskPrioritySchemeDocumentation();
-    std::string getServiceSelectionSchemeDocumentation();
-    std::string getCoreSelectionSchemeDocumentation();
-    void printAllSchemes();
+    std::string getDocumentation();
 
     static std::vector<std::string> stringSplit(const std::string& str, char sep);
 
@@ -58,10 +60,14 @@ public:
 
 private:
 
+    std::string getTaskPrioritySchemeDocumentation();
+    std::string getClusterSelectionSchemeDocumentation();
+    std::string getCoreSelectionSchemeDocumentation();
+
     void computeTaskBottomLevel(const std::shared_ptr<wrench::WorkflowTask>& task);
 
     void initTaskPrioritySchemes();
-    void initServiceSelectionSchemes();
+    void initClusterSelectionSchemes();
     void initCoreSelectionSchemes();
 
     void prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> &tasks);
@@ -76,14 +82,16 @@ private:
 
     bool taskCanRunOn(const std::shared_ptr<wrench::WorkflowTask>& task, const std::shared_ptr<wrench::BareMetalComputeService>& service);
 
-    std::vector<unsigned long> enabled_scheduling_algorithms;
-    std::
-    map<unsigned long, std::tuple<std::string, std::string, std::string>> scheduling_algorithms_index_to_tuple;
+
+    std::vector<std::string> enabled_task_selection_schemes;
+    std::vector<std::string> enabled_cluster_selection_schemes;
+    std::vector<std::string> enabled_core_selection_schemes;
+    std::vector<std::tuple<std::string, std::string, std::string>> enabled_scheduling_algorithms;
 
     unsigned long current_scheduling_algorithm = 0;
 
-    std::map<std::string, std::function<bool(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::WorkflowTask> b)>> task_priority_schemes;
-    std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> service_selection_schemes;
+    std::map<std::string, std::function<bool(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::WorkflowTask> b)>> task_selection_schemes;
+    std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> cluster_selection_schemes;
     std::map<std::string, std::function<unsigned long(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
 
 

@@ -136,7 +136,8 @@ int SimpleWMS::main() {
     while (true) {
         // Scheduler change?
 
-        bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getEnabledSchedulingAlgorithms().size() > 1));
+
+        bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
         bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
         bool should_do_next_change;
 
@@ -155,18 +156,18 @@ int SimpleWMS::main() {
             should_do_next_change = this->one_schedule_change_has_happened and (new_level_became_ready);
         }
 
-//        std::cerr << "speculation can happen: " << speculation_can_happen << "\n";
 //        std::cerr << "should_do_first_change: " << should_do_first_change << "\n";
+//        std::cerr << "speculation can happen: " << speculation_can_happen << "\n";
 //        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
 
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
-            std::cerr.flush();
+//            std::cerr.flush();
             std::vector<std::pair<double, double>> makespans_and_energies;
 
-            for (auto const &algorithm_index : this->scheduler->getEnabledSchedulingAlgorithms()) {
+            for (int algorithm_index = 0; algorithm_index < this->scheduler->getNumEnabledSchedulingAlgorithms(); algorithm_index++) {
                 pipe(pipefd);
                 auto pid = fork();
                 if (!pid) {
@@ -271,13 +272,13 @@ int SimpleWMS::main() {
 
                 double makespan = std::get<0>(makespans_and_energies.at(argmin));
                 double energy = std::get<1>(makespans_and_energies.at(argmin));
-                unsigned long algorithm_index = this->scheduler->getEnabledSchedulingAlgorithms().at(argmin);
+                unsigned long algorithm_index = argmin;
 
                 this->algorithm_sequence.push_back(algorithm_index);
                 std::cerr << "Switching to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
-                          this->scheduler->schedulingAlgorithmToString(algorithm_index) << " (makespan = " << makespan << ") " <<
-                          "(energy = " << energy << ")\n";
+                          this->scheduler->algorithmIndexToString(algorithm_index) << " (makespan = " << makespan << ", " <<
+                          "energy = " << energy << ")\n";
 
                 this->scheduler->useSchedulingAlgorithm(algorithm_index);
             }

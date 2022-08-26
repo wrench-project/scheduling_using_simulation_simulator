@@ -17,24 +17,8 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler, "Log category for Simple Schedule
 SimpleStandardJobScheduler::SimpleStandardJobScheduler() {
 
     this->initTaskPrioritySchemes();
-    this->initServiceSelectionSchemes();
+    this->initClusterSelectionSchemes();
     this->initCoreSelectionSchemes();
-
-    unsigned int index = 0;
-    // Create all combination algorithms
-    for (auto const &e : this->task_priority_schemes) {
-        if (e.first == "random") continue;
-        for (auto const &f : this->service_selection_schemes) {
-            if (f.first == "random") continue;
-            for (auto const &g : this->core_selection_schemes) {
-                if (g.first == "random") continue;
-                this->scheduling_algorithms_index_to_tuple[index] =  std::make_tuple(e.first, f.first, g.first);
-                index++;
-            }
-        }
-    }
-    // Add the random:random:random one
-    this->scheduling_algorithms_index_to_tuple[index] = std::make_tuple("random", "random", "random");
 
     // Create the random dist / rng for the random:random:random
     this->random_dist_for_random_algorithm = std::uniform_int_distribution<unsigned long>(0, 1000);
@@ -131,7 +115,7 @@ bool SimpleStandardJobScheduler::taskCanRunOn(const std::shared_ptr<wrench::Work
 void SimpleStandardJobScheduler::prioritizeTasks(std::vector<std::shared_ptr<wrench::WorkflowTask> > &tasks) {
 
     std::sort(tasks.begin(), tasks.end(),
-              this->task_priority_schemes[std::get<0>(this->scheduling_algorithms_index_to_tuple.at(this->current_scheduling_algorithm))]);
+              this->task_selection_schemes[std::get<0>(this->enabled_scheduling_algorithms.at(this->current_scheduling_algorithm))]);
 
 }
 
@@ -162,8 +146,8 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 //    }
 
     picked_host = "";
-    *picked_service = this->service_selection_schemes[std::get<1>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, possible_services);
-    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->scheduling_algorithms_index_to_tuple[this->current_scheduling_algorithm])](task, *picked_service);
+    *picked_service = this->cluster_selection_schemes[std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, possible_services);
+    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, *picked_service);
     for (auto const &entry : this->idle_cores_map[*picked_service]) {
         if (entry.second >= *picked_num_cores) {
             picked_host = entry.first;
@@ -239,21 +223,33 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
 }
 
 
+std::string SimpleStandardJobScheduler::getDocumentation() {
+
+    std::string scheduler_doc;
+    scheduler_doc += "* Task selection schemes:\n";
+    scheduler_doc += this->getTaskPrioritySchemeDocumentation();
+    scheduler_doc += "* Cluster selection schemes:\n";
+    scheduler_doc += this->getClusterSelectionSchemeDocumentation();
+    scheduler_doc += "* Core selection schemes:\n";
+    scheduler_doc += this->getCoreSelectionSchemeDocumentation();
+    return scheduler_doc;
+}
+
 
 std::string SimpleStandardJobScheduler::getTaskPrioritySchemeDocumentation() {
     std::string documentation;
 
-    for (auto const &e : this->task_priority_schemes) {
+    for (auto const &e : this->task_selection_schemes) {
         documentation += "  - " + e.first + "\n";
     }
     return documentation;
 }
 
 
-std::string SimpleStandardJobScheduler::getServiceSelectionSchemeDocumentation() {
+std::string SimpleStandardJobScheduler::getClusterSelectionSchemeDocumentation() {
     std::string documentation;
 
-    for (auto const &e : this->service_selection_schemes) {
+    for (auto const &e : this->cluster_selection_schemes) {
         documentation += "  - " + e.first + "\n";
     }
     return documentation;
@@ -267,21 +263,6 @@ std::string SimpleStandardJobScheduler::getCoreSelectionSchemeDocumentation() {
     }
     return documentation;
 }
-
-void SimpleStandardJobScheduler::printAllSchemes() {
-
-    for (auto const &e : this->scheduling_algorithms_index_to_tuple) {
-        unsigned int index = e.first;
-        std::cout << "[" << (index < 100 ? "0" : "") << (index < 10 ? "0" : "") << index << "] "
-                  << this->schedulingAlgorithmToString(index) << "\n";
-    }
-}
-
-std::string SimpleStandardJobScheduler::schedulingAlgorithmToString(unsigned long index) {
-    auto alg = this->scheduling_algorithms_index_to_tuple[index];
-    return std::get<0>(alg) + ":" + std::get<1>(alg) + ":" + std::get<2>(alg);
-}
-
 
 std::vector<std::string> SimpleStandardJobScheduler::stringSplit(const std::string& str, char sep) {
     stringstream ss(str);
@@ -322,5 +303,44 @@ void SimpleStandardJobScheduler::computeTaskBottomLevel(const std::shared_ptr<wr
     }
     this->bottom_levels[task] = my_bl + max;
 //    std::cerr << task->getID() << ": " << this->bottom_levels[task] << "\n";
+}
+
+void SimpleStandardJobScheduler::enableTaskSelectionScheme(const std::string& scheme) {
+    if (this->task_selection_schemes.find(scheme) == this->task_selection_schemes.end()) {
+        throw std::invalid_argument("Unknown task selection scheme: " + scheme);
+    }
+    this->enabled_task_selection_schemes.push_back(scheme);
+}
+
+void SimpleStandardJobScheduler::enableClusterSelectionScheme(const std::string& scheme) {
+    if (this->cluster_selection_schemes.find(scheme) == this->cluster_selection_schemes.end()) {
+        throw std::invalid_argument("Unknown cluster selection scheme: " + scheme);
+    }
+    this->enabled_cluster_selection_schemes.push_back(scheme);
+}
+
+void SimpleStandardJobScheduler::enableCoreSelectionScheme(const std::string& scheme) {
+    if (this->core_selection_schemes.find(scheme) == this->core_selection_schemes.end()) {
+        throw std::invalid_argument("Unknown core selection scheme: " + scheme);
+    }
+    this->enabled_core_selection_schemes.push_back(scheme);
+}
+
+void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
+    for (const auto &task_ss : this->enabled_task_selection_schemes) {
+        for (const auto &cluster_ss: this->enabled_cluster_selection_schemes) {
+            for (const auto &core_ss: this->enabled_core_selection_schemes) {
+                this->enabled_scheduling_algorithms.emplace_back(std::make_tuple(task_ss, cluster_ss, core_ss));
+            }
+        }
+    }
+
+}
+
+std::string SimpleStandardJobScheduler::algorithmIndexToString(unsigned long index) {
+    auto algorithm = this->enabled_scheduling_algorithms.at(index);
+    return std::get<0>(algorithm) + "/" +
+           std::get<1>(algorithm) + "/" +
+           std::get<2>(algorithm);
 }
 

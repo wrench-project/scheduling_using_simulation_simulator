@@ -42,17 +42,11 @@ int main(int argc, char **argv) {
     // all scheduling schemes
     auto scheduler = new SimpleStandardJobScheduler();
 
-    std::string scheduler_doc;
-    scheduler_doc += "* Task selection schemes:\n";
-    scheduler_doc += scheduler->getTaskPrioritySchemeDocumentation();
-    scheduler_doc += "* Service selection schemes:\n";
-    scheduler_doc += scheduler->getServiceSelectionSchemeDocumentation();
-    scheduler_doc += "* Core selection schemes:\n";
-    scheduler_doc += scheduler->getCoreSelectionSchemeDocumentation();
-
     std::string cluster_specs;
     std::string reference_flops;
-    std::string algorithm_list;
+    std::string task_selection_scheme_list;
+    std::string cluster_selection_scheme_list;
+    std::string core_selection_scheme_list;
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
@@ -62,7 +56,6 @@ int main(int argc, char **argv) {
     int simulation_noise_seed;
     std::string algorithm_selection_scheme;
     double energy_bound;
-
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -75,16 +68,22 @@ int main(int argc, char **argv) {
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
             ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:io_bw:bw,#nodes:#cores:flops:watts:io_bw:internet_bw,..."),
              "Cluster specifications. Example: \"100:8:120Gf:200.0:100MBps:100MBps,10:4:200Gf:100.0:100MBps:25MBps\"\n")
-            ("print_all_algorithms",
+            ("list_all_algorithms",
              "Print all scheduling algorithms available\n")
             ("print_JSON",
              "Print the JSON input configuration, without the actual simulation results\n")
-            ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
-             "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
-             "(use --print_all_algorithms to see the list of algorithms)\n")
-            ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "simulation_noise_seed")),
-             "The seed used for the RNG used by the random:random:random algorithm "
-             "(between 1 and 200000)")
+//            ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
+//             "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
+//             "(use --list_all_algorithms to see the list of algorithms)\n")
+            ("task_selection_schemes", po::value<std::string>(&task_selection_scheme_list)->required()->value_name("<list of task selection schemes to use>"),
+               "command-separated list of task selection schemes to use\n")
+            ("cluster_selection_schemes", po::value<std::string>(&cluster_selection_scheme_list)->required()->value_name("<list of cluster selection schemes to use>"),
+             "command-separated list of cluster selection schemes to use\n")
+            ("core_selection_schemes", po::value<std::string>(&core_selection_scheme_list)->required()->value_name("<list of core selection schemes to use>"),
+             "command-separated list of core selection schemes to use\n")
+            ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "random_algorithm_seed")),
+             "The seed used for the RNG used for the random:random:random algorithm "
+             "(between 1 and 200000)\n")
             ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
              "The algorithm may change for the first time once this fraction of the work has been performed "
              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n")
@@ -92,17 +91,17 @@ int main(int argc, char **argv) {
              "The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\nIf <0, then changes occur each time the first task in a workflow level becomes ready!\n")
             ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
              "The fraction of work that a speculative execution performs before reporting to the master process "
-             "(between 0.0 and 1, 1 meaning \"until workflow completion\")")
+             "(between 0.0 and 1, 1 meaning \"until workflow completion\")\n")
             ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
-             "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)")
+             "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)\n")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
-             "(between 0.0 and 1, 0 meaning \"perfectly accurate\")")
+             "(between 0.0 and 1, 0 meaning \"perfectly accurate\")\n")
             ("simulation_noise_seed", po::value<int>(&simulation_noise_seed)->value_name("<simulation noise seed>")->default_value(42)->notifier(in(1, 200000, "simulation_noise_seed")),
              "The seed used for the RNG that generates simulation noise "
-             "(between 1 and 200000)")
+             "(between 1 and 200000)\n")
             ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->required()->value_name("<algorithm selection scheme>"),
-             "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')")
+             "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')\n")
             ("energy_bound", po::value<double>(&energy_bound)->value_name("<energy bound in Joules>")->default_value(-1.0),
             "An energy bound to not overcome\n")
             ("no-contention",
@@ -122,8 +121,8 @@ int main(int argc, char **argv) {
             std::cerr << desc << "\n";
             exit(0);
         }
-        if (vm.count("print_all_algorithms")) {
-            scheduler->printAllSchemes();
+        if (vm.count("list_all_algorithms")) {
+            std::cout << scheduler->getDocumentation() << "\n";
             exit(0);
         }
         // Throw whatever exception in case argument values are erroneous
@@ -159,49 +158,37 @@ int main(int argc, char **argv) {
         throw std::invalid_argument("A positive energy_bound argument should be provided when using 'makespan_given_energy_bound' algorithm selection scheme");
     }
 
+    // Enable all desired scheduling algorithms in the scheduler
 
-    // Add all specified scheduling algorithms in oder to the scheduler
-    std::vector<unsigned long> algorithm_index_list;
-    {
-        auto tokens = SimpleStandardJobScheduler::stringSplit(algorithm_list, ',');
-
-        bool first = true;
-
-        try {
-            for (const auto &s_index : tokens) {
-                unsigned long index_low, index_high;
-                auto range_tokens = SimpleStandardJobScheduler::stringSplit(s_index, '-');
-
-                index_low = std::strtol(range_tokens.at(0).c_str(), nullptr, 10);
-                if (range_tokens.size() == 1) {
-                    index_high = std::strtol(range_tokens.at(0).c_str(), nullptr, 10);
-                } else if (range_tokens.size() == 2) {
-                    index_high = std::strtol(range_tokens.at(1).c_str(), nullptr, 10);
-                } else {
-                    throw std::invalid_argument("Invalid algorithm list range item " + s_index);
-                }
-                if (index_low > index_high) {
-                    throw std::invalid_argument("Invalid algorithm list range item " + s_index);
-                }
-                if (index_low >= scheduler->getNumAvailableSchedulingAlgorithms()) {
-                    throw std::invalid_argument("Invalid algorithm index " + s_index);
-                }
-                if (index_high >= scheduler->getNumAvailableSchedulingAlgorithms()) {
-                    throw std::invalid_argument("Invalid algorithm index " + s_index);
-                }
-                for (auto i = index_low; i <= index_high; i++) {
-                    scheduler->enableSchedulingAlgorithm(i);
-                    algorithm_index_list.push_back(i);
-                    if (first) {
-                        scheduler->useSchedulingAlgorithm(i);
-                        first = false;
-                    }
-                }
-            }
-        } catch (std::invalid_argument &e) {
-            std::cerr << "Error: invalid algorithm list: "<< e.what() << "\n";
-            exit(1);
+    try {
+        auto tokens = SimpleStandardJobScheduler::stringSplit(task_selection_scheme_list, ',');
+        std::sort(tokens.begin(), tokens.end());
+        task_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
+                        [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+        for (const auto &scheme : tokens) {
+            scheduler->enableTaskSelectionScheme(scheme);
         }
+        tokens = SimpleStandardJobScheduler::stringSplit(cluster_selection_scheme_list, ',');
+        std::sort(tokens.begin(), tokens.end());
+        cluster_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
+                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+        for (const auto &scheme : tokens) {
+            scheduler->enableClusterSelectionScheme(scheme);
+        }
+        tokens = SimpleStandardJobScheduler::stringSplit(core_selection_scheme_list, ',');
+        std::sort(tokens.begin(), tokens.end());
+        core_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
+                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+        for (const auto &scheme : tokens) {
+            scheduler->enableCoreSelectionScheme(scheme);
+        }
+
+        scheduler->finalizeEnabledAlgorithmList();
+
+    } catch (std::invalid_argument &e) {
+        std::cerr << "Error: " << e.what() << "\n\n";
+        std::cerr << scheduler->getDocumentation() << "\n";
+        exit(1);
     }
 
     // Create DETERMINISTIC JSON output
@@ -212,14 +199,10 @@ int main(int argc, char **argv) {
     output_json["clusters"] = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
                                               [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
     // Algorithms
-    std::sort(algorithm_index_list.begin(), algorithm_index_list.end());
-    std::vector<std::string> algorithm_index_string_list;
-    algorithm_index_string_list.reserve(algorithm_index_list.size());
-    for (const auto &i : algorithm_index_list) {
-        algorithm_index_string_list.push_back(std::to_string(i));
-    }
-    output_json["algorithms"] =  std::accumulate(algorithm_index_string_list.begin(), algorithm_index_string_list.end(), std::string(""),
-                                                 [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+    output_json["task_selection_schemes"] =  task_selection_scheme_list;
+    output_json["cluster_selection_schemes"] =  cluster_selection_scheme_list;
+    output_json["core_selection_schemes"] = core_selection_scheme_list;
+
     // Workflow
     tokens = SimpleStandardJobScheduler::stringSplit(workflow_file, '/');
     output_json["workflow"] = tokens.at(tokens.size()-1);
@@ -353,9 +336,10 @@ int main(int argc, char **argv) {
 
     // Output
     output_json["makespan"] = workflow->getCompletionDate();
+
     std::string alg_sequence;
     for (auto const &a : wms->getAlgorithmSequence()) {
-        alg_sequence += std::to_string(a) + ",";
+        alg_sequence += scheduler->algorithmIndexToString(a) + ",";
     }
     if (not alg_sequence.empty()) {
         alg_sequence.pop_back();
