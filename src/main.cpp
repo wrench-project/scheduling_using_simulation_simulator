@@ -325,6 +325,7 @@ int main(int argc, char **argv) {
     simulation->getOutput().enableWorkflowTaskTimestamps(false);
     // Launch the simulation
 //    std::cerr << "Launching the Simulation..." << std::endl;
+    auto simulation_begin_time = time(NULL);
     try {
         simulation->launch();
     } catch (std::runtime_error &e) {
@@ -337,6 +338,8 @@ int main(int argc, char **argv) {
     }
 
     // Output
+    output_json["simulation_time"] = time(NULL) - simulation_begin_time;
+
     output_json["makespan"] = workflow->getCompletionDate();
 
     std::string alg_sequence;
