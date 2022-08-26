@@ -306,21 +306,37 @@ void SimpleStandardJobScheduler::enableTaskSelectionScheme(const std::string& sc
     if (this->task_selection_schemes.find(scheme) == this->task_selection_schemes.end()) {
         throw std::invalid_argument("Unknown task selection scheme: " + scheme);
     }
-    this->enabled_task_selection_schemes.push_back(scheme);
+    if (std::find(this->enabled_task_selection_schemes.begin(),
+                  this->enabled_task_selection_schemes.end(),
+                  scheme) ==
+                  this->enabled_task_selection_schemes.end()) {
+        this->enabled_task_selection_schemes.push_back(scheme);
+    }
 }
 
 void SimpleStandardJobScheduler::enableClusterSelectionScheme(const std::string& scheme) {
     if (this->cluster_selection_schemes.find(scheme) == this->cluster_selection_schemes.end()) {
         throw std::invalid_argument("Unknown cluster selection scheme: " + scheme);
     }
-    this->enabled_cluster_selection_schemes.push_back(scheme);
+    if (std::find(this->enabled_cluster_selection_schemes.begin(),
+                  this->enabled_cluster_selection_schemes.end(),
+                  scheme) ==
+                  this->enabled_cluster_selection_schemes.end()) {
+        this->enabled_cluster_selection_schemes.push_back(scheme);
+    }
+
 }
 
 void SimpleStandardJobScheduler::enableCoreSelectionScheme(const std::string& scheme) {
     if (this->core_selection_schemes.find(scheme) == this->core_selection_schemes.end()) {
         throw std::invalid_argument("Unknown core selection scheme: " + scheme);
     }
-    this->enabled_core_selection_schemes.push_back(scheme);
+    if (std::find(this->enabled_core_selection_schemes.begin(),
+                  this->enabled_core_selection_schemes.end(),
+                  scheme) ==
+                  this->enabled_core_selection_schemes.end()) {
+        this->enabled_core_selection_schemes.push_back(scheme);
+    }
 }
 
 void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
@@ -331,6 +347,7 @@ void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
             }
         }
     }
+    std::cerr << "NUM_ALGOS = " << this->enabled_scheduling_algorithms.size() << "\n";
 
 
 }
