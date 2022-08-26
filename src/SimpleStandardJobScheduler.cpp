@@ -207,7 +207,6 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         for (const auto &file : task->getInputFiles()) {
             // Pick a location
             std::shared_ptr<wrench::FileLocation> picked_location = pick_location(picked_service, file);
-            std::cerr << "LOCATION: " << picked_location->toString() << "\n";
             file_locations.insert(std::make_pair(file, picked_location));
         }
 
@@ -219,9 +218,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);
-        std::cerr << "SUMITTING TO " << picked_service->getName() << "\n";
         this->job_manager->submitJob(job, picked_service, {{task->getID(), picked_host + ":" + std::to_string(picked_num_cores)}});
-        std::cerr << "SUBMITTED TO " << picked_service->getName() << "\n";
 
     }
 //    std::cerr << "DEBUG SCHEDULED " << num_scheduled_tasks << "\n";
@@ -336,7 +333,6 @@ void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
     for (const auto &task_ss : this->enabled_task_selection_schemes) {
         for (const auto &cluster_ss: this->enabled_cluster_selection_schemes) {
             for (const auto &core_ss: this->enabled_core_selection_schemes) {
-                std::cerr << "ALG: " << task_ss << "/" << cluster_ss << "/" << core_ss << "\n";
                 this->enabled_scheduling_algorithms.emplace_back(std::make_tuple(task_ss, cluster_ss, core_ss));
             }
         }
