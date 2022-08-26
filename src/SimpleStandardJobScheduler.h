@@ -57,6 +57,7 @@ public:
     void setRandomAlgorithmSeed(int seed) { this->rng_for_random_algorithm.seed(seed);}
 
     std::unordered_map<std::shared_ptr<wrench::BareMetalComputeService>, std::map<std::string, unsigned long>> idle_cores_map;
+    std::unordered_map<std::shared_ptr<wrench::DataFile>, std::set<std::shared_ptr<wrench::StorageService>>> file_replica_locations;
 
 private:
 

@@ -58,8 +58,11 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
         const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
         const std::shared_ptr<wrench::DataFile>& file) {
 
-    auto entries = this->file_registry_service->lookupEntry(file);
-    if (entries.empty()) {
+//    auto entries = this->file_registry_service->lookupEntry(file);
+//    if (entries.empty()) {
+//        throw std::runtime_error("FILE " + file->getID() + " is nowhere to be found!");
+//    }
+    if (this->file_replica_locations.find(file) == this->file_replica_locations.end()) {
         throw std::runtime_error("FILE " + file->getID() + " is nowhere to be found!");
     }
 
@@ -68,17 +71,17 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
     std::shared_ptr<wrench::FileLocation> picked_other_location = nullptr;
 
     // Pick the WMS host if file is there
-    for (auto const &location : entries) {
-        if (location->getStorageService() == this->map_compute_to_storage[compute_service]) {
-            picked_local_location = location;
+    for (auto const &ss : this->file_replica_locations[file]) {
+        if (ss == this->map_compute_to_storage[compute_service]) {
+            picked_local_location = wrench::FileLocation::LOCATION(ss);
             continue;
         }
-        if (location->getStorageService()->getHostname() == this->wms_host) {
-            picked_wms_location = location;
+        if (ss->getHostname() == this->wms_host) {
+            picked_wms_location = wrench::FileLocation::LOCATION(ss);
             continue;
         }
         if (picked_other_location == nullptr) {
-            picked_other_location = location;
+            picked_other_location = wrench::FileLocation::LOCATION(ss);;
             continue;
         }
     }
@@ -162,7 +165,7 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 
 void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
-//    std::cerr << "GOT A BUNCH OF READY TASKS TO SCEHDULE: \n";
+//    std::cerr << "GOT A BUNCH OF READY TASKS TO SCHEDULE: \n";
 //    for (auto const &rt: tasks) {
 //        std::cerr << "READY TASK: " << rt->getID() << ": NC = " << rt->getNumberOfChildren() <<"\n";
 //    }
@@ -204,6 +207,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         for (const auto &file : task->getInputFiles()) {
             // Pick a location
             std::shared_ptr<wrench::FileLocation> picked_location = pick_location(picked_service, file);
+            std::cerr << "LOCATION: " << picked_location->toString() << "\n";
             file_locations.insert(std::make_pair(file, picked_location));
         }
 
@@ -215,7 +219,9 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);
+        std::cerr << "SUMITTING TO " << picked_service->getName() << "\n";
         this->job_manager->submitJob(job, picked_service, {{task->getID(), picked_host + ":" + std::to_string(picked_num_cores)}});
+        std::cerr << "SUBMITTED TO " << picked_service->getName() << "\n";
 
     }
 //    std::cerr << "DEBUG SCHEDULED " << num_scheduled_tasks << "\n";
@@ -330,10 +336,12 @@ void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
     for (const auto &task_ss : this->enabled_task_selection_schemes) {
         for (const auto &cluster_ss: this->enabled_cluster_selection_schemes) {
             for (const auto &core_ss: this->enabled_core_selection_schemes) {
+                std::cerr << "ALG: " << task_ss << "/" << cluster_ss << "/" << core_ss << "\n";
                 this->enabled_scheduling_algorithms.emplace_back(std::make_tuple(task_ss, cluster_ss, core_ss));
             }
         }
     }
+
 
 }
 

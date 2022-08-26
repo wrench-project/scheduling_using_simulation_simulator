@@ -316,7 +316,9 @@ int main(int argc, char **argv) {
 
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {
-        simulation->stageFile(f, wms_ss);
+//        simulation->stageFile(f, wms_ss);
+        simulation->createFile(f, wrench::FileLocation::LOCATION(wms_ss));
+        scheduler->file_replica_locations[f].insert(wms_ss);
     }
 
     simulation->getOutput().enableFileReadWriteCopyTimestamps(false);

@@ -346,7 +346,8 @@ void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::Standa
         }
     }
     for (auto const &f : created_files) {
-        this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
+        this->scheduler->file_replica_locations[f].insert(target_ss);
+//        this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
     }
 
 //    std::cerr << "UPDATING CORES[" << event->compute_service->getHostname() << "][" << task->getExecutionHost() << "] += " << task->getNumCoresAllocated() << "\n";
