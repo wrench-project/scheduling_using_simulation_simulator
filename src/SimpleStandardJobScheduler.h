@@ -31,7 +31,6 @@ public:
             std::shared_ptr<wrench::JobManager> job_manager,
             std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
             std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-            std::shared_ptr<wrench::FileRegistryService> file_registry_service,
             std::string wms_host);
 
     void enableTaskSelectionScheme(const std::string& scheme);
@@ -96,7 +95,6 @@ private:
     std::map<std::string, std::function<unsigned long(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::BareMetalComputeService> service)>> core_selection_schemes;
 
 
-    std::shared_ptr<wrench::FileRegistryService> file_registry_service;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
     std::map<std::shared_ptr<wrench::BareMetalComputeService>, std::shared_ptr<wrench::StorageService>> map_compute_to_storage;

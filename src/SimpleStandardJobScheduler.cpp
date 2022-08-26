@@ -29,12 +29,10 @@ void SimpleStandardJobScheduler::init(
         std::shared_ptr<wrench::JobManager> _job_manager,
         std::set<std::shared_ptr<wrench::BareMetalComputeService>> _compute_services,
         std::set<std::shared_ptr<wrench::StorageService>> _storage_services,
-        std::shared_ptr<wrench::FileRegistryService> _file_registry_service,
         std::string wms_host) {
     this->job_manager = std::move(_job_manager);
     this->storage_services = std::move(_storage_services);
     this->compute_services = std::move(_compute_services);
-    this->file_registry_service = std::move(_file_registry_service);
     this->wms_host = std::move(wms_host);
 
     // Create compute/storage map
@@ -58,10 +56,6 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
         const std::shared_ptr<wrench::BareMetalComputeService>& compute_service,
         const std::shared_ptr<wrench::DataFile>& file) {
 
-//    auto entries = this->file_registry_service->lookupEntry(file);
-//    if (entries.empty()) {
-//        throw std::runtime_error("FILE " + file->getID() + " is nowhere to be found!");
-//    }
     if (this->file_replica_locations.find(file) == this->file_replica_locations.end()) {
         throw std::runtime_error("FILE " + file->getID() + " is nowhere to be found!");
     }

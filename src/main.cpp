@@ -283,10 +283,6 @@ int main(int argc, char **argv) {
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
 
-    // Create a file registry service
-    auto file_registry_service = simulation->add(new wrench::FileRegistryService(wms_host));
-    file_registry_service->setNetworkTimeoutValue(DBL_MAX);
-
     // Parse the workflow
     // As a performance optimization, in this whole simulator, instead of calling getMinNumCores() and getMaxNumCores(), we just
     // hardcode 1 and 32. Check out the macros.
@@ -305,7 +301,7 @@ int main(int argc, char **argv) {
                           simulation_noise_scheme, simulation_noise, simulation_noise_seed, energy_bound,
                           algorithm_selection_scheme,
                           disable_contention,
-                          compute_services, storage_services, file_registry_service, wms_host));
+                          compute_services, storage_services, wms_host));
 
     // Set the amdahl parameter for each task between 0.8 and 1.0
     std::uniform_real_distribution<double> random_dist(0.8, 1.0);

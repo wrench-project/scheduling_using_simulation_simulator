@@ -32,7 +32,6 @@ public:
               bool disable_contention,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-              std::shared_ptr<wrench::FileRegistryService> file_registry_service,
               const std::string &hostname);
 
     std::vector<unsigned long> getAlgorithmSequence() { return this->algorithm_sequence; }
@@ -66,7 +65,6 @@ private:
 
     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
-    std::shared_ptr<wrench::FileRegistryService> file_registry_service;
 
     std::vector<unsigned long> algorithm_sequence;
 

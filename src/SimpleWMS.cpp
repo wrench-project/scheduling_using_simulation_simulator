@@ -32,7 +32,6 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      bool disable_contention,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-                     std::shared_ptr<wrench::FileRegistryService> file_registry_service,
                      const std::string &hostname) : wrench::ExecutionController(
         hostname,
         "simple"),
@@ -48,8 +47,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
                                                     disable_contention(disable_contention),
                                                     compute_services(std::move(compute_services)),
-                                                    storage_services(std::move(storage_services)),
-                                                    file_registry_service(std::move(file_registry_service))
+                                                    storage_services(std::move(storage_services))
 {
 }
 
@@ -77,7 +75,6 @@ int SimpleWMS::main() {
     this->scheduler->init(this->job_manager,
                           this->compute_services,
                           this->storage_services,
-                          this->file_registry_service,
                           wrench::Simulation::getHostName());
 
     // Compute the total work
@@ -347,7 +344,6 @@ void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::Standa
     }
     for (auto const &f : created_files) {
         this->scheduler->file_replica_locations[f].insert(target_ss);
-//        this->file_registry_service->addEntry(f, wrench::FileLocation::LOCATION(target_ss));
     }
 
 //    std::cerr << "UPDATING CORES[" << event->compute_service->getHostname() << "][" << task->getExecutionHost() << "] += " << task->getNumCoresAllocated() << "\n";
