@@ -39,10 +39,10 @@ public:
     void finalizeEnabledAlgorithmList();
 
     unsigned long getNumAvailableSchedulingAlgorithms() { return this->enabled_scheduling_algorithms.size(); }
-    unsigned long getNumEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms.size(); }
+    int getNumEnabledSchedulingAlgorithms() { return this->enabled_scheduling_algorithms.size(); }
     void useSchedulingAlgorithm(unsigned long scheduler_index) { this->current_scheduling_algorithm = scheduler_index; }
-    unsigned long getUsedSchedulingAlgorithm() const { return this->current_scheduling_algorithm; }
-    std::string schedulingAlgorithmToString(unsigned long index);
+    int getUsedSchedulingAlgorithm() const { return this->current_scheduling_algorithm; }
+    std::string schedulingAlgorithmToString(int index);
     std::string algorithmIndexToString(unsigned long);
 
     std::string getDocumentation();
@@ -88,7 +88,7 @@ private:
     std::vector<std::string> enabled_core_selection_schemes;
     std::vector<std::tuple<std::string, std::string, std::string>> enabled_scheduling_algorithms;
 
-    unsigned long current_scheduling_algorithm = 0;
+    int current_scheduling_algorithm = 0;
 
     std::map<std::string, std::function<bool(const std::shared_ptr<wrench::WorkflowTask> a, const std::shared_ptr<wrench::WorkflowTask> b)>> task_selection_schemes;
     std::map<std::string, std::function<std::shared_ptr<wrench::BareMetalComputeService> (const std::shared_ptr<wrench::WorkflowTask> task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>> services)>> cluster_selection_schemes;

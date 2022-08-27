@@ -165,7 +165,10 @@ int SimpleWMS::main() {
             std::vector<std::pair<double, double>> makespans_and_energies;
 
             for (int algorithm_index = 0; algorithm_index < this->scheduler->getNumEnabledSchedulingAlgorithms(); algorithm_index++) {
-                pipe(pipefd);
+                auto err = pipe(pipefd);
+                if (err < 0) {
+                    throw std::runtime_error("pipe() failed!: " + errno);
+                }
                 auto pid = fork();
                 if (!pid) {
                     // Make the child mute
@@ -206,12 +209,18 @@ int SimpleWMS::main() {
                     int stat_loc;
                     double child_time;
                     double child_energy;
-                    read(pipefd[0], &child_time, sizeof(double));
+                    auto err = read(pipefd[0], &child_time, sizeof(double));
+                    if (err < 0) {
+                        throw std::runtime_error("read() failed!: " + errno);
+                    }
 //                    std::cerr << "Child told me: " << child_time << "\n";
                     if (this->simulation_noise_scheme == "macro") {
                         child_time = child_time + child_time * random_dist(rng);
                     }
-                    read(pipefd[0], &child_energy, sizeof(double));
+                    err = read(pipefd[0], &child_energy, sizeof(double));
+                    if (err < 0) {
+                        throw std::runtime_error("read() failed!: " + errno);
+                    }
                     makespans_and_energies.emplace_back(child_time, child_energy);
                     waitpid(pid, &stat_loc, 0);
                 }
@@ -245,7 +254,7 @@ int SimpleWMS::main() {
                                               }) - ratios.begin();
                 } else if (this->algorithm_selection_scheme == "makespan_given_energy_bound") {
                     argmin = ULONG_MAX;
-                    for (int i=0; i < makespans_and_energies.size(); i++) {
+                    for (unsigned long i=0; i < makespans_and_energies.size(); i++) {
                         if (makespans_and_energies.at(i).second > this->energy_bound) {
                             continue;
                         }
@@ -310,7 +319,10 @@ int SimpleWMS::main() {
         // Get current time
         double now = wrench::Simulation::getCurrentSimulatedDate();
         // Send it back to the parent
-        write(pipefd[1], &now, sizeof(double));
+        auto err = write(pipefd[1], &now, sizeof(double));
+        if (err < 0) {
+            throw std::runtime_error("write() failed!: " + errno);
+        }
         // Get the total energy consumption
         double energy = 0.0;
         for (auto const &h : wrench::Simulation::getHostnameList()) {
@@ -319,7 +331,10 @@ int SimpleWMS::main() {
             }
         }
         // Send it back to the parent
-        write(pipefd[1], &energy, sizeof(double));
+        err = write(pipefd[1], &energy, sizeof(double));
+        if (err < 0) {
+            throw std::runtime_error("write() failed!: " + errno);
+        }
         close(pipefd[1]);
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
     }

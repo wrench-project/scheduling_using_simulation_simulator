@@ -72,7 +72,7 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
 
         // Creating pstates as a trick to make it possible to inject platform noise (i.e., wrong flop rates)
         std::string wattage_per_state_value;
-        for (int j=0; j < speed_per_pstate.size(); j++) {
+        for (unsigned long j=0; j < speed_per_pstate.size(); j++) {
             wattage_per_state_value += std::string("10.00:" + watts) + (j < speed_per_pstate.size() - 1 ? "," : "");
         }
 
@@ -135,12 +135,12 @@ void PlatformCreator::create_platform() {
     }
 
     // Create all routes
-    for (int i=0; i < zones.size(); i++) {
+    for (unsigned long i=0; i < zones.size(); i++) {
         auto src = zones.at(i);
         sg4::NetZone* src_zone = std::get<0>(src);
         simgrid::kernel::routing::NetPoint* src_netpoint = std::get<1>(src);
         sg4::Link *src_link = std::get<2>(src);
-        for (int j=i+1 ; j < zones.size(); j++) {
+        for (unsigned long j=i+1 ; j < zones.size(); j++) {
             auto dst = zones.at(j);
             sg4::NetZone* dst_zone = std::get<0>(dst);
             simgrid::kernel::routing::NetPoint* dst_netpoint = std::get<1>(dst);
