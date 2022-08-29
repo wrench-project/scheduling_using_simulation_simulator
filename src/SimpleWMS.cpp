@@ -29,6 +29,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      int noise_seed,
                      double energy_bound,
                      std::string &algorithm_selection_scheme,
+                     double simulation_overhead,
                      bool disable_contention,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
@@ -45,6 +46,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     noise_seed(noise_seed),
                                                     energy_bound(energy_bound),
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
+                                                    simulation_overhead(simulation_overhead),
                                                     disable_contention(disable_contention),
                                                     compute_services(std::move(compute_services)),
                                                     storage_services(std::move(storage_services))
@@ -132,8 +134,6 @@ int SimpleWMS::main() {
 
     while (true) {
         // Scheduler change?
-
-
         bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
         bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
         bool should_do_next_change;
@@ -160,8 +160,8 @@ int SimpleWMS::main() {
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
             this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
-//            std::cerr << "Exploring scheduling algorithm futures speculatively... \n";
-//            std::cerr.flush();
+//            std::cerr << "[" << wrench::Simulation::getCurrentSimulatedDate() << "] PARENT: " << getpid() << " Exploring scheduling algorithm futures speculatively... \n";
+            std::cerr.flush();
             std::vector<std::pair<double, double>> makespans_and_energies;
 
             for (int algorithm_index = 0; algorithm_index < this->scheduler->getNumEnabledSchedulingAlgorithms(); algorithm_index++) {
@@ -173,10 +173,11 @@ int SimpleWMS::main() {
                 if (!pid) {
                     // Make the child mute
                     close(STDOUT_FILENO);
+                    close(STDERR_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
-//                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->schedulingAlgorithmToString(algorithm_index) << ")\n";
-                    this->scheduler->useSchedulingAlgorithm(algorithm_index);
+//                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
+                    this->scheduler->useSchedulingAlgorithmNow(algorithm_index);
                     this->i_am_speculative = true;
                     // Apply all noise if micro
                     if (this->simulation_noise_scheme == "micro-application") {
@@ -281,12 +282,14 @@ int SimpleWMS::main() {
                 unsigned long algorithm_index = argmin;
 
                 this->algorithm_sequence.push_back(algorithm_index);
-                std::cerr << "Switching to algorithm " <<
+                std::cerr << "[" + std::to_string(wrench::Simulation::getCurrentSimulatedDate()) + "] Deciding to switch to algorithm " <<
                           "[" << (algorithm_index < 100 ? "0" : "") << (algorithm_index < 10 ? "0" : "") << algorithm_index << "] " <<
                           this->scheduler->algorithmIndexToString(algorithm_index) << " (makespan = " << makespan << ", " <<
                           "energy = " << energy << ")\n";
 
-                this->scheduler->useSchedulingAlgorithm(algorithm_index);
+                this->scheduler->useSchedulingAlgorithmThen(algorithm_index,
+                                                            wrench::Simulation::getCurrentSimulatedDate() +
+                                                            this->simulation_overhead * (this->scheduler->getNumEnabledSchedulingAlgorithms()));
             }
         }
 

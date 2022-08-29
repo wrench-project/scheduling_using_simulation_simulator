@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
     double first_scheduler_change_trigger;
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
+    double simulation_overhead;
     std::string simulation_noise_scheme;
     double simulation_noise;
     int random_algorithm_seed;
@@ -94,6 +95,8 @@ int main(int argc, char **argv) {
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")\n")
             ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
              "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)\n")
+            ("simulation_overhead", po::value<double>(&simulation_overhead)->value_name("<simulation overhead in seconds>")->default_value(0.0)->notifier(in(0.0, 1000000, "per_algorithm_simulation_overhead")),
+             "The overhead, in seconds, of simulating one future execution (default: 0)\n")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")\n")
@@ -299,7 +302,7 @@ int main(int argc, char **argv) {
                           workflow,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
                           simulation_noise_scheme, simulation_noise, simulation_noise_seed, energy_bound,
-                          algorithm_selection_scheme,
+                          algorithm_selection_scheme, simulation_overhead,
                           disable_contention,
                           compute_services, storage_services, wms_host));
 

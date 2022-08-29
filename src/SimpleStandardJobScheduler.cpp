@@ -159,6 +159,14 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 
 void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrench::WorkflowTask>> tasks) {
 
+    // Update scheduling algorithm if need be
+    if (this->upcoming_scheduling_algorithm_activation_date <= wrench::Simulation::getCurrentSimulatedDate()) {
+        std::cerr << "[" + std::to_string(wrench::Simulation::getCurrentSimulatedDate()) + "] Actually switching to algorithm " <<
+                  "[" << (this->upcoming_scheduling_algorithm < 100 ? "0" : "") << (this->upcoming_scheduling_algorithm < 10 ? "0" : "") << this->upcoming_scheduling_algorithm << "] " <<
+                  this->algorithmIndexToString(this->upcoming_scheduling_algorithm) << "\n";
+        this->current_scheduling_algorithm = this->upcoming_scheduling_algorithm;
+        this->upcoming_scheduling_algorithm_activation_date = DBL_MAX;
+    }
 //    std::cerr << "GOT A BUNCH OF READY TASKS TO SCHEDULE: \n";
 //    for (auto const &rt: tasks) {
 //        std::cerr << "READY TASK: " << rt->getID() << ": NC = " << rt->getNumberOfChildren() <<"\n";
@@ -309,7 +317,7 @@ void SimpleStandardJobScheduler::enableTaskSelectionScheme(const std::string& sc
     if (std::find(this->enabled_task_selection_schemes.begin(),
                   this->enabled_task_selection_schemes.end(),
                   scheme) ==
-                  this->enabled_task_selection_schemes.end()) {
+        this->enabled_task_selection_schemes.end()) {
         this->enabled_task_selection_schemes.push_back(scheme);
     }
 }
@@ -321,7 +329,7 @@ void SimpleStandardJobScheduler::enableClusterSelectionScheme(const std::string&
     if (std::find(this->enabled_cluster_selection_schemes.begin(),
                   this->enabled_cluster_selection_schemes.end(),
                   scheme) ==
-                  this->enabled_cluster_selection_schemes.end()) {
+        this->enabled_cluster_selection_schemes.end()) {
         this->enabled_cluster_selection_schemes.push_back(scheme);
     }
 
@@ -334,7 +342,7 @@ void SimpleStandardJobScheduler::enableCoreSelectionScheme(const std::string& sc
     if (std::find(this->enabled_core_selection_schemes.begin(),
                   this->enabled_core_selection_schemes.end(),
                   scheme) ==
-                  this->enabled_core_selection_schemes.end()) {
+        this->enabled_core_selection_schemes.end()) {
         this->enabled_core_selection_schemes.push_back(scheme);
     }
 }
@@ -359,3 +367,30 @@ std::string SimpleStandardJobScheduler::algorithmIndexToString(unsigned long ind
            std::get<2>(algorithm);
 }
 
+unsigned long SimpleStandardJobScheduler::getNumAvailableSchedulingAlgorithms() {
+    return this->enabled_scheduling_algorithms.size();
+}
+
+unsigned long SimpleStandardJobScheduler::getNumEnabledSchedulingAlgorithms() {
+    return this->enabled_scheduling_algorithms.size();
+}
+
+void SimpleStandardJobScheduler::useSchedulingAlgorithmNow(unsigned long scheduler_index) {
+    this->current_scheduling_algorithm = scheduler_index;
+    this->upcoming_scheduling_algorithm = scheduler_index;
+    this->upcoming_scheduling_algorithm_activation_date = DBL_MAX;
+}
+
+unsigned long SimpleStandardJobScheduler::getUsedSchedulingAlgorithm() const {
+    return this->current_scheduling_algorithm;
+}
+
+void SimpleStandardJobScheduler::useSchedulingAlgorithmThen(unsigned long scheduler_index, double date) {
+    // Ignore a change is a previous change hasn't been activated yet.
+    if (this->upcoming_scheduling_algorithm_activation_date < DBL_MAX and
+        this->upcoming_scheduling_algorithm_activation_date > wrench::Simulation::getCurrentSimulatedDate()) {
+        return;
+    }
+    this->upcoming_scheduling_algorithm = scheduler_index;
+    this->upcoming_scheduling_algorithm_activation_date = date;
+}
