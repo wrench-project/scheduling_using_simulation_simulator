@@ -167,7 +167,7 @@ int SimpleWMS::main() {
             for (int algorithm_index = 0; algorithm_index < this->scheduler->getNumEnabledSchedulingAlgorithms(); algorithm_index++) {
                 auto err = pipe(pipefd);
                 if (err < 0) {
-                    throw std::runtime_error("pipe() failed!: " + errno);
+                    throw std::runtime_error("pipe() failed!: " + std::to_string(errno));
                 }
                 auto pid = fork();
                 if (!pid) {
@@ -211,7 +211,7 @@ int SimpleWMS::main() {
                     double child_energy;
                     auto err = read(pipefd[0], &child_time, sizeof(double));
                     if (err < 0) {
-                        throw std::runtime_error("read() failed!: " + errno);
+                        throw std::runtime_error("read() failed!: " + std::to_string(errno));
                     }
 //                    std::cerr << "Child told me: " << child_time << "\n";
                     if (this->simulation_noise_scheme == "macro") {
@@ -219,7 +219,7 @@ int SimpleWMS::main() {
                     }
                     err = read(pipefd[0], &child_energy, sizeof(double));
                     if (err < 0) {
-                        throw std::runtime_error("read() failed!: " + errno);
+                        throw std::runtime_error("read() failed!: " + std::to_string(errno));
                     }
                     makespans_and_energies.emplace_back(child_time, child_energy);
                     waitpid(pid, &stat_loc, 0);
@@ -321,7 +321,7 @@ int SimpleWMS::main() {
         // Send it back to the parent
         auto err = write(pipefd[1], &now, sizeof(double));
         if (err < 0) {
-            throw std::runtime_error("write() failed!: " + errno);
+            throw std::runtime_error("write() failed!: " + std::to_string(errno));
         }
         // Get the total energy consumption
         double energy = 0.0;
@@ -333,7 +333,7 @@ int SimpleWMS::main() {
         // Send it back to the parent
         err = write(pipefd[1], &energy, sizeof(double));
         if (err < 0) {
-            throw std::runtime_error("write() failed!: " + errno);
+            throw std::runtime_error("write() failed!: " + std::to_string(errno));
         }
         close(pipefd[1]);
 //        std::cerr << "  CHILD RETURNING TO MAIN AFTER SENDING MAKESPAN " << now << " TO PARENT\n";
