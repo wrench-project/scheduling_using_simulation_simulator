@@ -347,7 +347,7 @@ void SimpleStandardJobScheduler::finalizeEnabledAlgorithmList() {
             }
         }
     }
-    std::cerr << "NUM_ALGOS = " << this->enabled_scheduling_algorithms.size() << "\n";
+//    std::cerr << "NUM_ALGOS = " << this->enabled_scheduling_algorithms.size() << "\n";
 
 
 }

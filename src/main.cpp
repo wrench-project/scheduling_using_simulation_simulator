@@ -285,9 +285,9 @@ int main(int argc, char **argv) {
 
     // Parse the workflow
     // As a performance optimization, in this whole simulator, instead of calling getMinNumCores() and getMaxNumCores(), we just
-    // hardcode 1 and 32. Check out the macros.
+    // hardcode 1 and 64. Check out the macros.
     auto workflow = wrench::WfCommonsWorkflowParser::createWorkflowFromJSON(
-            workflow_file, reference_flops, false, 1, 32, true);
+            workflow_file, reference_flops, false, 1, 64, true);
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
