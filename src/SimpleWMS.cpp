@@ -158,7 +158,6 @@ int SimpleWMS::main() {
 //        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
 
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
-            this->one_schedule_change_has_happened = true;
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "[" << wrench::Simulation::getCurrentSimulatedDate() << "] PARENT: " << getpid() << " Exploring scheduling algorithm futures speculatively... \n";
             std::cerr.flush();
@@ -287,9 +286,18 @@ int SimpleWMS::main() {
                           this->scheduler->algorithmIndexToString(algorithm_index) << " (makespan = " << makespan << ", " <<
                           "energy = " << energy << ")\n";
 
-                this->scheduler->useSchedulingAlgorithmThen(algorithm_index,
-                                                            wrench::Simulation::getCurrentSimulatedDate() +
-                                                            this->simulation_overhead * (this->scheduler->getNumEnabledSchedulingAlgorithms()));
+                double simulation_delay = this->simulation_overhead *
+                                             (this->scheduler->getNumEnabledSchedulingAlgorithms());
+
+                if (this->one_schedule_change_has_happened) {
+                    this->scheduler->useSchedulingAlgorithmThen(algorithm_index,
+                                                                wrench::Simulation::getCurrentSimulatedDate() +
+                                                                simulation_delay);
+                } else {
+                    wrench::Simulation::sleep(simulation_delay);
+                    this->scheduler->useSchedulingAlgorithmThen(algorithm_index, wrench::Simulation::getCurrentSimulatedDate());
+                }
+                this->one_schedule_change_has_happened = true;
             }
         }
 
