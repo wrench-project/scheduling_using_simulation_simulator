@@ -217,6 +217,7 @@ int main(int argc, char **argv) {
     output_json["speculative_work_fraction"] = speculative_work_fraction;
     output_json["simulation_noise"] = simulation_noise;
     output_json["simulation_noise_seed"] = simulation_noise_seed;
+    output_json["simulation_overhead"] = simulation_overhead;
 
     output_json["simulation_noise_scheme"] = simulation_noise_scheme;
     output_json["algorithm_selection_scheme"] = algorithm_selection_scheme;

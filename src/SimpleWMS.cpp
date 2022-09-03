@@ -287,7 +287,7 @@ int SimpleWMS::main() {
                           "energy = " << energy << ")\n";
 
                 double simulation_delay = this->simulation_overhead *
-                                             (this->scheduler->getNumEnabledSchedulingAlgorithms());
+                        (double)(this->scheduler->getNumEnabledSchedulingAlgorithms());
 
                 if (this->one_schedule_change_has_happened) {
                     this->scheduler->useSchedulingAlgorithmThen(algorithm_index,
