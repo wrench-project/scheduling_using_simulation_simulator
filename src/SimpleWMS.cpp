@@ -171,7 +171,7 @@ int SimpleWMS::main() {
                 auto pid = fork();
                 if (!pid) {
                     // Make the child mute
-                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
+                    //std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
                     close(STDOUT_FILENO);
                     close(STDERR_FILENO);
                     // Close the read end of the pipe
@@ -213,7 +213,7 @@ int SimpleWMS::main() {
                     if (err < 0) {
                         throw std::runtime_error("read() failed!: " + std::to_string(errno));
                     }
-                    std::cerr << "Child told me: " << child_time << "\n";
+                    //std::cerr << "Child told me: " << child_time << "\n";
                     if (this->simulation_noise_scheme == "macro") {
                         child_time = child_time + child_time * random_dist(rng);
                     }
