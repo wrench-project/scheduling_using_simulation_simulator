@@ -51,6 +51,8 @@ int main(int argc, char **argv) {
     double periodic_scheduler_change_trigger;
     double speculative_work_fraction;
     double simulation_overhead;
+    double min_task_parallel_efficiency;
+    double max_task_parallel_efficiency;
     std::string simulation_noise_scheme;
     double simulation_noise;
     int random_algorithm_seed;
@@ -65,6 +67,12 @@ int main(int argc, char **argv) {
              "Show this help message\n")
             ("workflow", po::value<std::string>(&workflow_file)->required()->value_name("<path>"),
              "Path to JSON workflow description file\n")
+            ("min_task_parallel_efficiency", po::value<double>(&min_task_parallel_efficiency)->value_name("<parallel efficiency>")->default_value(0.5)->notifier(in(0.0, 1.0, "min_task_parallel_efficiency")),
+             "The minimum task parallel efficiency"
+             "(between 0.0 and 1, 0.0)\n")
+            ("max_task_parallel_efficiency", po::value<double>(&max_task_parallel_efficiency)->value_name("<parallel efficiency>")->default_value(0.9)->notifier(in(0.0, 1.0, "max_task_parallel_efficiency")),
+             "The maximum task parallel efficiency"
+             "(between minimum parallel efficiency and 1, 0.0)\n")
             ("reference_flops", po::value<std::string>(&reference_flops)->required()->value_name("<ref flops>"),
              "Reference flop rate for the workflow file tasks (e.g., \"100Gf\" means that each second of computation in the JSON file corresponds to 100Gf)\n")
             ("clusters", po::value<std::string>(&cluster_specs)->required()->value_name("#nodes:#cores:flops:watts:io_bw:bw,#nodes:#cores:flops:watts:io_bw:internet_bw,..."),
@@ -85,18 +93,18 @@ int main(int argc, char **argv) {
             ("random_algorithm_seed", po::value<int>(&random_algorithm_seed)->value_name("<random algorithm seed>")->default_value(42)->notifier(in(1, 200000, "random_algorithm_seed")),
              "The seed used for the RNG used for the random:random:random algorithm "
              "(between 1 and 200000)\n")
-            ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
+            ("first_scheduler_change_trigger", po::value<double>(&first_scheduler_change_trigger)->value_name("<work fraction>")->required()->notifier(in(0.0, 1.0, "first_scheduler_change_trigger")),
              "The algorithm may change for the first time once this fraction of the work has been performed "
              "(between 0.0 and 1, 0.0 meaning \"right away\" and 1.0 meaning \"never change\")\n")
-            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->default_value(1.0)->notifier(in(-1.0, 1.0, "periodic_scheduler_change_trigger")),
+            ("periodic_scheduler_change_trigger", po::value<double>(&periodic_scheduler_change_trigger)->value_name("<work fraction>")->required()->notifier(in(-1.0, 1.0, "periodic_scheduler_change_trigger")),
              "The algorithm may change each time this fraction of the work has been performed (between 0.0 and 1, 1 meaning \"never change\")\nIf <0, then changes occur each time the first task in a workflow level becomes ready!\n")
-            ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->default_value(1.0)->notifier(in(0.0, 1.0, "speculative_work_fraction")),
+            ("speculative_work_fraction", po::value<double>(&speculative_work_fraction)->value_name("<work fraction>")->required()->notifier(in(0.0, 1.0, "speculative_work_fraction")),
              "The fraction of work that a speculative execution performs before reporting to the master process "
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")\n")
             ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
              "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)\n")
             ("simulation_overhead", po::value<double>(&simulation_overhead)->value_name("<simulation overhead in seconds>")->default_value(0.0)->notifier(in(0.0, 1000000, "per_algorithm_simulation_overhead")),
-             "The overhead, in seconds, of simulating one future execution (default: 0)\n")
+             "The overhead, in seconds, of simulating one future execution\n")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")\n")
@@ -156,13 +164,17 @@ int main(int argc, char **argv) {
         throw std::invalid_argument("Invalid --algorithm_selection_scheme value");
     }
 
+    // Check the task parallel efficiencies
+    if (min_task_parallel_efficiency > max_task_parallel_efficiency) {
+        throw std::invalid_argument("Minimum task parallel efficiency should be lower than maximum task parallel efficiency");
+    }
+
     // Check the energy bound
     if ((algorithm_selection_scheme == "makespan_given_energy_bound") and (energy_bound < 0)) {
         throw std::invalid_argument("A positive energy_bound argument should be provided when using 'makespan_given_energy_bound' algorithm selection scheme");
     }
 
     // Enable all desired scheduling algorithms in the scheduler
-
     try {
         auto tokens = SimpleStandardJobScheduler::stringSplit(task_selection_scheme_list, ',');
         std::sort(tokens.begin(), tokens.end());
@@ -210,6 +222,8 @@ int main(int argc, char **argv) {
     tokens = SimpleStandardJobScheduler::stringSplit(workflow_file, '/');
     output_json["workflow"] = tokens.at(tokens.size()-1);
     output_json["reference_flops"] = reference_flops;
+    output_json["min_task_parallel_efficiency"] = min_task_parallel_efficiency;
+    output_json["max_task_parallel_efficiency"] = max_task_parallel_efficiency;
 
     // Configs
     output_json["first_scheduler_change_trigger"] = first_scheduler_change_trigger;
