@@ -27,10 +27,13 @@ public:
               std::string &simulation_noise_scheme,
               double simulation_noise,
               int noise_seed,
+              double simulation_noise_reduction,
               double energy_bound,
               std::string &algorithm_selection_scheme,
               double simulation_overhead,
               bool disable_contention,
+              bool disable_adaptation_if_noise_has_not_changed,
+              bool at_most_one_noise_reduction,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
               const std::string &hostname);
@@ -53,10 +56,13 @@ private:
     std::string simulation_noise_scheme;
     double simulation_noise;
     int noise_seed;
+    double simulation_noise_reduction;
     double energy_bound;
     std::string algorithm_selection_scheme;
     double simulation_overhead;
     bool disable_contention;
+    bool disable_adaptation_if_noise_has_not_changed;
+    bool at_most_one_noise_reduction;
 
     double work_done_since_last_scheduler_change = 0.0;
     bool one_schedule_change_has_happened = false;

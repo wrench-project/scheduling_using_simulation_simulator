@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
     double max_task_parallel_efficiency;
     std::string simulation_noise_scheme;
     double simulation_noise;
+    double simulation_noise_reduction;
     int random_algorithm_seed;
     int simulation_noise_seed;
     std::string algorithm_selection_scheme;
@@ -108,6 +109,9 @@ int main(int argc, char **argv) {
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
              "(between 0.0 and 1, 0 meaning \"perfectly accurate\")\n")
+            ("simulation_noise_reduction", po::value<double>(&simulation_noise_reduction)->value_name("<simulation noise reduction>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise_reduction")),
+             "The reduction of the simulation noise at each adaptation beyond the first one, i.e., noise = max(0, noise - reduction "
+             "(between 0.0 and 1, 0.0 meaning \"no noise reduction\")\n")
             ("simulation_noise_seed", po::value<int>(&simulation_noise_seed)->value_name("<simulation noise seed>")->default_value(42)->notifier(in(1, 200000, "simulation_noise_seed")),
              "The seed used for the RNG that generates simulation noise "
              "(between 1 and 200000)\n")
@@ -117,6 +121,10 @@ int main(int argc, char **argv) {
             "An energy bound to not overcome\n")
             ("no-contention",
              "Disables network contention simulation (every link is a 'FATPIPE' in speculative executions)\n")
+            ("adapt-only-if-noise-has-changed",
+             "Disable scheduling algorithm adaptation if simulation noise hasn't changed\n")
+            ("at-most-one-noise-reduction",
+             "Reduce noise at most once\n")
             ;
 
     // Parse command-line arguments
@@ -148,6 +156,12 @@ int main(int argc, char **argv) {
 
     // Disable/enable contention
     bool disable_contention = vm.count("no-contention") > 0;
+
+    // Disable adaption if noise hasn't changed
+    bool disable_adaptation_if_noise_has_not_changed = vm.count("adapt-only-if-noise-has-changed") > 0;
+
+    // Disable adaption if noise hasn't changed
+    bool at_most_one_noise_reduction = vm.count("at-most-one-noise-reduction") > 0;
 
     // Check the noise scheme
     if (simulation_noise_scheme != "macro" and
@@ -230,11 +244,17 @@ int main(int argc, char **argv) {
     output_json["periodic_scheduler_change_trigger"] = periodic_scheduler_change_trigger;
     output_json["speculative_work_fraction"] = speculative_work_fraction;
     output_json["simulation_noise"] = simulation_noise;
+    output_json["simulation_noise_reduction"] = simulation_noise_reduction;
     output_json["simulation_noise_seed"] = simulation_noise_seed;
     output_json["simulation_overhead"] = simulation_overhead;
 
     output_json["simulation_noise_scheme"] = simulation_noise_scheme;
     output_json["algorithm_selection_scheme"] = algorithm_selection_scheme;
+    output_json["at_most_one_noise_reduction"] = at_most_one_noise_reduction;
+    output_json["disable_adaptation_if_noise_has_not_changed"] = disable_adaptation_if_noise_has_not_changed;
+    output_json["simulation_noise_reduction"] = simulation_noise_reduction;
+
+    output_json["no_contention"] = disable_contention;
 
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
@@ -316,9 +336,12 @@ int main(int argc, char **argv) {
             new SimpleWMS(scheduler,
                           workflow,
                           first_scheduler_change_trigger, periodic_scheduler_change_trigger, speculative_work_fraction,
-                          simulation_noise_scheme, simulation_noise, simulation_noise_seed, energy_bound,
+                          simulation_noise_scheme, simulation_noise, simulation_noise_seed,
+                          simulation_noise_reduction, energy_bound,
                           algorithm_selection_scheme, simulation_overhead,
                           disable_contention,
+                          disable_adaptation_if_noise_has_not_changed,
+                          at_most_one_noise_reduction,
                           compute_services, storage_services, wms_host));
 
     // Set the amdahl parameter for each task between 0.8 and 1.0

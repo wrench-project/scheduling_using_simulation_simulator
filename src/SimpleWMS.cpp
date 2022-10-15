@@ -27,10 +27,13 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      std::string &simulation_noise_scheme,
                      double simulation_noise,
                      int noise_seed,
+                     double simulation_noise_reduction,
                      double energy_bound,
                      std::string &algorithm_selection_scheme,
                      double simulation_overhead,
                      bool disable_contention,
+                     bool disable_adaptation_if_noise_has_not_changed,
+                     bool at_most_one_noise_reduction,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
                      const std::string &hostname) : wrench::ExecutionController(
@@ -44,13 +47,80 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     simulation_noise_scheme(simulation_noise_scheme),
                                                     simulation_noise(simulation_noise),
                                                     noise_seed(noise_seed),
+                                                    simulation_noise_reduction(simulation_noise_reduction),
                                                     energy_bound(energy_bound),
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
                                                     simulation_overhead(simulation_overhead),
                                                     disable_contention(disable_contention),
+                                                    disable_adaptation_if_noise_has_not_changed(disable_adaptation_if_noise_has_not_changed),
+                                                    at_most_one_noise_reduction(at_most_one_noise_reduction),
                                                     compute_services(std::move(compute_services)),
-                                                    storage_services(std::move(storage_services))
-{
+                                                    storage_services(std::move(storage_services)) { }
+
+
+void apply_micro_simulation_noise(wrench::Simulation *simulation,
+                                  std::shared_ptr<wrench::Workflow> workflow,
+                                  std::string noise_scheme,
+                                  double noise, double seed) {
+    std::uniform_real_distribution<double> random_dist(-noise, noise);
+    std::mt19937 rng(seed);
+
+    // Compute noisy tasks and file sizes that children will use and thus
+    // incur simulation errors (for the micro-application scheme)
+
+    if (noise_scheme == "micro-application") {
+        std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
+        std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
+        for (auto const &f : workflow->getFileMap()) {
+            double size = f.second->getSize();
+            size = std::max<double>(0, size + size * random_dist(rng));
+            noisy_file_sizes[f.second] = size;
+        }
+        for (auto const &t : workflow->getTasks()) {
+            double flops = t->getFlops();
+            flops = std::max<double>(0, flops + flops * random_dist(rng));
+            noisy_task_flops[t] = flops;
+        }
+
+        for (auto const &f : workflow->getFileMap()) {
+            f.second->setSize(noisy_file_sizes[f.second]);
+        }
+        for (auto const &t : workflow->getTasks()) {
+            t->setFlops(noisy_task_flops[t]);
+        }
+
+
+    } else if (noise_scheme == "micro-platform") {
+        // Compute noisy host pstates and link bandwidth that children will use
+        // and thus incur simulation error (for the micro-platform scheme)
+        // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
+        std::unordered_map<std::string, int> noisy_host_pstates;
+        std::unordered_map<std::string, double> noisy_link_bandwidths;
+
+//        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
+        for (auto const &h : wrench::Simulation::getHostnameList()) {
+            int num_pstates = wrench::Simulation::getNumberofPstates(h);
+            int base_pstate = (num_pstates -1)/2;
+            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
+            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
+            new_pstate = std::max<int>(new_pstate, 0);
+            noisy_host_pstates[h] = new_pstate;
+//            std::cerr << "PSTATE BASE WAS " << base_pstate << " ---> " << new_pstate << "\n";
+        }
+        for (auto const &l : wrench::Simulation::getLinknameList()) {
+            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
+            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
+            noisy_link_bandwidths[l] = bandwidth;
+        }
+
+        for (auto const &h : noisy_host_pstates) {
+            simulation->setPstate(h.first, h.second);
+        }
+        for (auto const &l : noisy_link_bandwidths) {
+            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+            link->set_bandwidth(l.second);
+        }
+    }
 }
 
 /**
@@ -58,8 +128,13 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
 */
 int SimpleWMS::main() {
 
-    std::uniform_real_distribution<double> random_dist(-simulation_noise, simulation_noise);
-    std::mt19937 rng(noise_seed);
+    auto macro_random_dist = new std::uniform_real_distribution<double>(-this->simulation_noise, this->simulation_noise);
+    auto macro_rng = new std::mt19937(this->noise_seed);
+    (*macro_random_dist)(*macro_rng);
+
+//    std::uniform_real_distribution<double> foo(-1,1);
+//    std::mt19937 faa(12);
+//    foo(faa);
 
     wrench::TerminalOutput::setThisProcessLoggingColor(wrench::TerminalOutput::COLOR_GREEN);
 
@@ -92,49 +167,16 @@ int SimpleWMS::main() {
     // Pipe used for communication with child
     int pipefd[2];
 
-    // Compute noisy tasks and file sizes that children will use and thus
-    // incur simulation errors (for the micro-application scheme)
-    std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
-    std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
-    if (this->simulation_noise_scheme == "micro-application") {
-        for (auto const &f : workflow->getFileMap()) {
-            double size = f.second->getSize();
-            size = std::max<double>(0, size + size * random_dist(rng));
-            noisy_file_sizes[f.second] = size;
-        }
-        for (auto const &t : workflow->getTasks()) {
-            double flops = t->getFlops();
-            flops = std::max<double>(0, flops + flops * random_dist(rng));
-            noisy_task_flops[t] = flops;
-        }
-    }
-    // Compute noisy host pstates and link bandwidth that children will use
-    // and thus incur simulation error (for the micro-platform scheme)
-    // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
-    std::unordered_map<std::string, int> noisy_host_pstates;
-    std::unordered_map<std::string, double> noisy_link_bandwidths;
-    if (this->simulation_noise_scheme == "micro-platform") {
-        for (auto const &h : wrench::Simulation::getHostnameList()) {
-            int num_pstates = wrench::Simulation::getNumberofPstates(h);
-            int base_pstate = (num_pstates -1)/2;
-            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
-            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
-            new_pstate = std::max<int>(new_pstate, 0);
-            noisy_host_pstates[h] = new_pstate;
-//            std::cerr << "PSTATE BASE WAS " << base_pstate << " ---> " << new_pstate << "\n";
-        }
-        for (auto const &l : wrench::Simulation::getLinknameList()) {
-            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
-            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
-            noisy_link_bandwidths[l] = bandwidth;
-        }
-    }
-
+    bool simulation_noise_has_changed = true;
     /* Main simulation loop */
-
     while (true) {
+
         // Scheduler change?
-        bool speculation_can_happen = ((not this->i_am_speculative) and (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
+        bool speculation_can_happen = ((not this->i_am_speculative) and
+                (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
+        if (this->disable_adaptation_if_noise_has_not_changed and (not simulation_noise_has_changed)) {
+            speculation_can_happen = false;
+        }
         bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
         bool should_do_next_change;
 
@@ -163,6 +205,11 @@ int SimpleWMS::main() {
             std::cerr.flush();
             std::vector<std::pair<double, double>> makespans_and_energies;
 
+            delete macro_random_dist;
+            delete macro_rng;
+            macro_random_dist = new std::uniform_real_distribution<double>(-this->simulation_noise, this->simulation_noise);
+            macro_rng = new std::mt19937(this->noise_seed);
+
             for (int algorithm_index = 0; algorithm_index < this->scheduler->getNumEnabledSchedulingAlgorithms(); algorithm_index++) {
                 auto err = pipe(pipefd);
                 if (err < 0) {
@@ -170,6 +217,8 @@ int SimpleWMS::main() {
                 }
                 auto pid = fork();
                 if (!pid) {
+
+
                     // Make the child mute
                     //std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
                     close(STDOUT_FILENO);
@@ -178,24 +227,14 @@ int SimpleWMS::main() {
                     close(pipefd[0]);
                     this->scheduler->useSchedulingAlgorithmNow(algorithm_index);
                     this->i_am_speculative = true;
-                    // Apply all noise if micro
-                    if (this->simulation_noise_scheme == "micro-application") {
-                        for (auto const &f : workflow->getFileMap()) {
-                            f.second->setSize(noisy_file_sizes[f.second]);
-                        }
-                        for (auto const &t : workflow->getTasks()) {
-                            t->setFlops(noisy_task_flops[t]);
-                        }
-                    } else if (this->simulation_noise_scheme == "micro-platform") {
-                        for (auto const &h : noisy_host_pstates) {
-                            this->simulation->setPstate(h.first, h.second);
-                        }
-                        for (auto const &l : noisy_link_bandwidths) {
-                            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
-                            link->set_bandwidth(l.second);
-                        }
-                    }
-                    // Disable contention if need to
+
+
+                    // Apply all micro noise, if any
+                    apply_micro_simulation_noise(this->simulation, workflow, this->simulation_noise_scheme,
+                                                 this->simulation_noise, this->noise_seed);
+
+
+                    // Disable contention if need be
                     if (this->disable_contention) {
                         for (auto const &link : simgrid::s4u::Engine::get_instance()->get_all_links()) {
                             link->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::FATPIPE);
@@ -215,7 +254,7 @@ int SimpleWMS::main() {
                     }
                     //std::cerr << "Child told me: " << child_time << "\n";
                     if (this->simulation_noise_scheme == "macro") {
-                        child_time = child_time + child_time * random_dist(rng);
+                        child_time = child_time + child_time * (*macro_random_dist)(*macro_rng);
                     }
                     err = read(pipefd[0], &child_energy, sizeof(double));
                     if (err < 0) {
@@ -230,6 +269,15 @@ int SimpleWMS::main() {
 //                for (int i=0; i < makespans_and_energies.size(); i++) {
 //                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
 //                }
+
+//                std::cerr << "MASTER: REDUCING BY " << this->simulation_noise_reduction << "\n";
+                double current_noise = this->simulation_noise;
+                this->simulation_noise = std::max<double>(0, this->simulation_noise - this->simulation_noise_reduction);
+                if (this->at_most_one_noise_reduction) {
+                    this->simulation_noise_reduction = 0.0;
+                }
+                simulation_noise_has_changed = (std::abs<double>(current_noise - this->simulation_noise) > 0.0001);
+
                 unsigned long argmin;
                 if (this->algorithm_selection_scheme == "makespan") {
                     argmin = std::min_element(makespans_and_energies.begin(), makespans_and_energies.end(),
@@ -287,7 +335,7 @@ int SimpleWMS::main() {
                           "energy = " << energy << ")\n";
 
                 double simulation_delay = this->simulation_overhead *
-                        (double)(this->scheduler->getNumEnabledSchedulingAlgorithms());
+                                          (double)(this->scheduler->getNumEnabledSchedulingAlgorithms());
 
                 if (this->one_schedule_change_has_happened) {
                     this->scheduler->useSchedulingAlgorithmThen(algorithm_index,
@@ -305,6 +353,8 @@ int SimpleWMS::main() {
         if ((this->i_am_speculative) and (this->work_done_since_last_scheduler_change > this->speculative_work_fraction * total_work)) {
             break;
         }
+
+
 
         // Get the ready tasks
         auto ready_tasks = this->workflow->getReadyTasks();
