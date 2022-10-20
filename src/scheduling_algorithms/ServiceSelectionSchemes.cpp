@@ -167,7 +167,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
         return *(services.begin()); // just in case
     };
 
-    this->cluster_selection_schemes["most_idle_cpu_resources"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->cluster_selection_schemes["most_idle_cpu_resources"] = [] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         double best=0;
         for (auto const &s : services) {

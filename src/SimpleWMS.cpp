@@ -138,7 +138,6 @@ void apply_micro_simulation_noise(wrench::Simulation *simulation,
             for (auto const &h: c.second) {
                 noisy_host_pstates[h] = new_pstate;
             }
-
         }
 
         for (auto const &l : wrench::Simulation::getLinknameList()) {
