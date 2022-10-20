@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
              "The fraction of work that a speculative execution performs before reporting to the master process "
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")\n")
             ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
-             "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform' (flop/sec and link byte/sec)\n")
+             "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-host' (host flop/sec and link byte/sec), 'micro-cluster (cluster flop/sec and link byte/sec\n")
             ("simulation_overhead", po::value<double>(&simulation_overhead)->value_name("<simulation overhead in seconds>")->default_value(0.0)->notifier(in(0.0, 1000000, "per_algorithm_simulation_overhead")),
              "The overhead, in seconds, of simulating one future execution\n")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
@@ -166,8 +166,9 @@ int main(int argc, char **argv) {
     // Check the noise scheme
     if (simulation_noise_scheme != "macro" and
         simulation_noise_scheme != "micro-application" and
-        simulation_noise_scheme != "micro-platform") {
-        throw std::invalid_argument("--simulation_noise_scheme value should be 'macro', 'micro-application', or 'micro-platform'");
+        simulation_noise_scheme != "micro-host" and
+        simulation_noise_scheme != "micro-cluster") {
+        throw std::invalid_argument("--simulation_noise_scheme value should be 'macro', 'micro-application', 'micro-host', or 'micro-cluster'");
     }
 
     // Check the algorithm selection scheme

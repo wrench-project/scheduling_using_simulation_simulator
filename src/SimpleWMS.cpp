@@ -90,7 +90,7 @@ void apply_micro_simulation_noise(wrench::Simulation *simulation,
         }
 
 
-    } else if (noise_scheme == "micro-platform") {
+    } else if (noise_scheme == "micro-host") {
         // Compute noisy host pstates and link bandwidth that children will use
         // and thus incur simulation error (for the micro-platform scheme)
         // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
@@ -107,6 +107,40 @@ void apply_micro_simulation_noise(wrench::Simulation *simulation,
             noisy_host_pstates[h] = new_pstate;
 //            std::cerr << "PSTATE BASE WAS " << base_pstate << " ---> " << new_pstate << "\n";
         }
+        for (auto const &l : wrench::Simulation::getLinknameList()) {
+            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
+            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
+            noisy_link_bandwidths[l] = bandwidth;
+        }
+
+        for (auto const &h : noisy_host_pstates) {
+            simulation->setPstate(h.first, h.second);
+        }
+        for (auto const &l : noisy_link_bandwidths) {
+            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+            link->set_bandwidth(l.second);
+        }
+    } else if (noise_scheme == "micro-cluster") {
+        // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+        // and thus incur simulation error (for the micro-platform scheme)
+        // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
+        std::unordered_map<std::string, int> noisy_host_pstates;
+        std::unordered_map<std::string, double> noisy_link_bandwidths;
+
+//        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
+        auto cluster_map = wrench::Simulation::getHostnameListByCluster();
+        for (auto const &c : cluster_map) {
+            int num_pstates = wrench::Simulation::getNumberofPstates(c.second.at(0));
+            int base_pstate = (num_pstates -1)/2;
+            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
+            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
+            new_pstate = std::max<int>(new_pstate, 0);
+            for (auto const &h: c.second) {
+                noisy_host_pstates[h] = new_pstate;
+            }
+
+        }
+
         for (auto const &l : wrench::Simulation::getLinknameList()) {
             double bandwidth = wrench::Simulation::getLinkBandwidth(l);
             bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
@@ -173,7 +207,7 @@ int SimpleWMS::main() {
 
         // Scheduler change?
         bool speculation_can_happen = ((not this->i_am_speculative) and
-                (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
+                                       (this->scheduler->getNumEnabledSchedulingAlgorithms() > 1));
         if (this->disable_adaptation_if_noise_has_not_changed and (not simulation_noise_has_changed)) {
             speculation_can_happen = false;
         }
