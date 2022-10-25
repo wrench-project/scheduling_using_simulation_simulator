@@ -179,6 +179,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
 //    }
 
     int num_scheduled_tasks = 0;
+    WRENCH_INFO("SCHEDULING TASKS");
     for (const auto &task : tasks) {
 
 //        WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
@@ -186,8 +187,9 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         std::string picked_host;
         unsigned long picked_num_cores;
 
+        WRENCH_INFO("Trying to schedule task %s", task->getID().c_str());
         if (not scheduleTask(task, &picked_service, picked_host, &picked_num_cores)) {
-//            WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
+            WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
             continue;
         }
 
