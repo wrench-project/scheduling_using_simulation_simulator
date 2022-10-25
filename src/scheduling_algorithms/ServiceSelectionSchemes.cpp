@@ -27,7 +27,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             } else if (s->getCoreFlopRate().begin()->second > picked->getCoreFlopRate().begin()->second) {
                 picked = s;
             } else if ((std::abs<double>(s->getCoreFlopRate().begin()->second - picked->getCoreFlopRate().begin()->second) < 0.00001)
-                       and (s->getName() > picked->getName())) {
+                       and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -42,7 +42,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             } else if (s->getCoreFlopRate().begin()->second < picked->getCoreFlopRate().begin()->second) {
                 picked = s;
             } else if ((std::abs<double>(s->getCoreFlopRate().begin()->second - picked->getCoreFlopRate().begin()->second) < 0.00001)
-                       and (s->getName() > picked->getName())) {
+                       and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -65,7 +65,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
                 }
                 if (s_total_cores > picked_total_cores) {
                     picked = s;
-                } else if ((s_total_cores == picked_total_cores) and (s->getName() > picked->getName())) {
+                } else if ((s_total_cores == picked_total_cores) and (s->getHostname() > picked->getHostname())) {
                     picked = s;
                 }
             }
@@ -89,7 +89,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
                 }
                 if (s_total_cores < picked_total_cores) {
                     picked = s;
-                } else if ((s_total_cores == picked_total_cores) and (s->getName() > picked->getName())) {
+                } else if ((s_total_cores == picked_total_cores) and (s->getHostname() > picked->getHostname())) {
                     picked = s;
                 }
             }
@@ -111,7 +111,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             if ((picked == nullptr) or (data_bytes > max_data_bytes)) {
                 picked = s;
                 max_data_bytes = data_bytes;
-            } else if ((std::abs<double>(data_bytes - max_data_bytes) < 0.00001) and (s->getName() > picked->getName())) {
+            } else if ((std::abs<double>(data_bytes - max_data_bytes) < 0.00001) and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -132,7 +132,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             if ((picked == nullptr) or (data_bytes < max_data_bytes)) {
                 picked = s;
                 max_data_bytes = data_bytes;
-            } else if ((std::abs<double>(data_bytes - max_data_bytes) < 0.00001) and (s->getName() > picked->getName())) {
+            } else if ((std::abs<double>(data_bytes - max_data_bytes) < 0.00001) and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -151,7 +151,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             if ((picked == nullptr) or (watts < picked_watts)) {
                 picked = s;
                 picked_watts = watts;
-            } else if ((std::abs<double>(picked_watts - watts) < 0.0001) and (s->getName() > picked->getName())) {
+            } else if ((std::abs<double>(picked_watts - watts) < 0.0001) and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -172,7 +172,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             if ((picked == nullptr) or (flops_per_watts < picked_watts_per_flops)) {
                 picked = s;
                 picked_watts_per_flops = flops_per_watts;
-            } else if ((std::abs<double>(picked_watts_per_flops - flops_per_watts) < 0.0001) and (s->getName() > picked->getName())) {
+            } else if ((std::abs<double>(picked_watts_per_flops - flops_per_watts) < 0.0001) and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
@@ -204,7 +204,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             if(picked == nullptr or power > best){
                 best = power;
                 picked = s;
-            } else if ((std::abs<double>(power - best) < 0.00001) and (s->getName() > picked->getName())) {
+            } else if ((std::abs<double>(power - best) < 0.00001) and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
         }
