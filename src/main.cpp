@@ -253,7 +253,6 @@ int main(int argc, char **argv) {
     output_json["algorithm_selection_scheme"] = algorithm_selection_scheme;
     output_json["at_most_one_noise_reduction"] = at_most_one_noise_reduction;
     output_json["disable_adaptation_if_noise_has_not_changed"] = disable_adaptation_if_noise_has_not_changed;
-    output_json["simulation_noise_reduction"] = simulation_noise_reduction;
 
     output_json["no_contention"] = disable_contention;
 
