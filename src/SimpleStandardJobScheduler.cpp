@@ -49,6 +49,11 @@ void SimpleStandardJobScheduler::init(
         auto cores_available = cs->getPerHostNumCores();
         this->idle_cores_map[cs] = cores_available;
     }
+    // Create core flop rate map
+    for (auto const &cs: this->compute_services) {
+        auto core_flop_rates = cs->getCoreFlopRate();
+        this->core_flop_rate_map[cs] = (*(core_flop_rates.begin())).second;
+    }
 
 }
 

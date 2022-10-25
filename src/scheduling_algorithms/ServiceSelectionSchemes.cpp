@@ -19,14 +19,14 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler_cluster_selection_schemes, "Log ca
 /***************************************************/
 void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
 
-    this->cluster_selection_schemes["fastest_cores"] = [] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->cluster_selection_schemes["fastest_cores"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         for (auto const &s : services) {
             if (picked == nullptr) {
                 picked = s;
-            } else if (s->getCoreFlopRate().begin()->second > picked->getCoreFlopRate().begin()->second) {
+            } else if (this->core_flop_rate_map[s] > this->core_flop_rate_map[picked]) {
                 picked = s;
-            } else if ((std::abs<double>(s->getCoreFlopRate().begin()->second - picked->getCoreFlopRate().begin()->second) < 0.00001)
+            } else if ((std::abs<double>(this->core_flop_rate_map[s] - this->core_flop_rate_map[picked]) < 0.00001)
                        and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
@@ -34,14 +34,14 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
         return picked;
     };
 
-    this->cluster_selection_schemes["slowest_cores"] = [] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->cluster_selection_schemes["slowest_cores"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         for (auto const &s : services) {
             if (picked == nullptr) {
                 picked = s;
-            } else if (s->getCoreFlopRate().begin()->second < picked->getCoreFlopRate().begin()->second) {
+            } else if (this->core_flop_rate_map[s] < this->core_flop_rate_map[picked]) {
                 picked = s;
-            } else if ((std::abs<double>(s->getCoreFlopRate().begin()->second - picked->getCoreFlopRate().begin()->second) < 0.00001)
+            } else if ((std::abs<double>(this->core_flop_rate_map[s] - this->core_flop_rate_map[picked]) < 0.00001)
                        and (s->getHostname() > picked->getHostname())) {
                 picked = s;
             }
@@ -158,7 +158,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
         return picked;
     };
 
-    this->cluster_selection_schemes["lowest_watts_per_flops"] = [] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->cluster_selection_schemes["lowest_watts_per_flops"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         double picked_watts_per_flops = -1.0;
         for (auto const &s : services) {
@@ -166,7 +166,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             auto wattage_per_state = s4u_host->get_property("wattage_per_state");
             auto tokens = SimpleStandardJobScheduler::stringSplit(wattage_per_state, ',');
             double watts = std::atof(SimpleStandardJobScheduler::stringSplit(tokens.at(0), ':').at(1).c_str());
-            double flops = s->getCoreFlopRate().begin()->second;
+            double flops = this->core_flop_rate_map[s];
             double flops_per_watts = flops / watts;
 
             if ((picked == nullptr) or (flops_per_watts < picked_watts_per_flops)) {
@@ -191,15 +191,15 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
         return *(services.begin()); // just in case
     };
 
-    this->cluster_selection_schemes["most_idle_cpu_resources"] = [] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
+    this->cluster_selection_schemes["most_idle_cpu_resources"] = [this] (const std::shared_ptr<wrench::WorkflowTask>& task, const std::set<std::shared_ptr<wrench::BareMetalComputeService>>& services) -> std::shared_ptr<wrench::BareMetalComputeService> {
         std::shared_ptr<wrench::BareMetalComputeService> picked = nullptr;
         double best=0;
         for (auto const &s : services) {
             double power=0;
-            auto idleHosts=s->getPerHostNumIdleCores();
-            auto cores=s->getCoreFlopRate();
+            auto idleHosts= this->idle_cores_map[s];
+            auto cores= this->core_flop_rate_map[s];
             for(auto const& host : idleHosts){
-                power+=(host.second*cores[host.first]);
+                power+=((double)host.second * cores);
             }
             if(picked == nullptr or power > best){
                 best = power;
