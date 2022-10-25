@@ -148,9 +148,9 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 //    }
 
     picked_host = "";
-    WRENCH_INFO("PICKING SERVICE %s", std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm]).c_str());
+//    WRENCH_INFO("PICKING SERVICE %s", std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm]).c_str());
     *picked_service = this->cluster_selection_schemes[std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, possible_services);
-    WRENCH_INFO("PICKING NUM_CORES");
+//    WRENCH_INFO("PICKING NUM_CORES");
     *picked_num_cores = this->core_selection_schemes[std::get<2>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, *picked_service);
     for (auto const &entry : this->idle_cores_map[*picked_service]) {
         if (entry.second >= *picked_num_cores) {
@@ -186,7 +186,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
 //    }
 
     int num_scheduled_tasks = 0;
-    WRENCH_INFO("SCHEDULING TASKS");
+//    WRENCH_INFO("SCHEDULING TASKS");
     for (const auto &task : tasks) {
 
 //        WRENCH_INFO("Trying to schedule ready task %s", task->getID().c_str());
@@ -194,7 +194,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         std::string picked_host;
         unsigned long picked_num_cores;
 
-        WRENCH_INFO("Trying to schedule task %s", task->getID().c_str());
+//        WRENCH_INFO("Trying to schedule task %s", task->getID().c_str());
         if (not scheduleTask(task, &picked_service, picked_host, &picked_num_cores)) {
             WRENCH_INFO("Wasn't able to schedule task %s", task->getID().c_str());
             continue;
