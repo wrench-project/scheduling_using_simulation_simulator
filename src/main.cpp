@@ -346,7 +346,7 @@ int main(int argc, char **argv) {
                           compute_services, storage_services, wms_host));
 
     // Set the amdahl parameter for each task between 0.5 and 0.9
-    std::uniform_real_distribution<double> random_dist(0.5, 0.9);
+    std::uniform_real_distribution<double> random_dist(min_task_parallel_efficiency, max_task_parallel_efficiency);
     std::mt19937 rng(42);
     for (auto const &t : workflow->getTasks()) {
         t->setParallelModel(wrench::ParallelModel::AMDAHL(random_dist(rng)));
