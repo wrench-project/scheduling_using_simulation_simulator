@@ -62,12 +62,14 @@ void apply_micro_simulation_noise(wrench::Simulation *simulation,
                                   std::shared_ptr<wrench::Workflow> workflow,
                                   std::string noise_scheme,
                                   double noise, double seed) {
+
+    if (noise <= 0.0) return;
+
     std::uniform_real_distribution<double> random_dist(-noise, noise);
     std::mt19937 rng(seed);
 
     // Compute noisy tasks and file sizes that children will use and thus
     // incur simulation errors (for the micro-application scheme)
-
     if (noise_scheme == "micro-application") {
         std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
         std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
