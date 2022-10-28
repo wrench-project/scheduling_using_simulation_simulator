@@ -58,102 +58,190 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     storage_services(std::move(storage_services)) { }
 
 
-void apply_micro_simulation_noise(wrench::Simulation *simulation,
-                                  std::shared_ptr<wrench::Workflow> workflow,
-                                  std::string noise_scheme,
-                                  double noise, double seed) {
+void SimpleWMS::compute_micro_simulation_noise(wrench::Simulation *simulation,
+                                               const std::shared_ptr<wrench::Workflow>& workflow,
+                                               const std::string& noise_scheme,
+                                               double previous_noise,
+                                               double noise,
+                                               double seed,
+                                               std::unordered_map<std::shared_ptr<wrench::DataFile>, double> &noisy_file_sizes,
+                                               std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> &noisy_task_flops,
+                                               std::unordered_map<std::string, int> &noisy_host_pstates,
+                                               std::unordered_map<std::string, double> &noisy_link_bandwidths) {
 
     if (noise <= 0.0) return;
 
-    std::uniform_real_distribution<double> random_dist(-noise, noise);
-    std::mt19937 rng(seed);
-
-    // Compute noisy tasks and file sizes that children will use and thus
-    // incur simulation errors (for the micro-application scheme)
-    if (noise_scheme == "micro-application") {
-        std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
-        std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
-        for (auto const &f : workflow->getFileMap()) {
-            double size = f.second->getSize();
-            size = std::max<double>(0, size + size * random_dist(rng));
-            noisy_file_sizes[f.second] = size;
-        }
-        for (auto const &t : workflow->getTasks()) {
-            double flops = t->getFlops();
-            flops = std::max<double>(0, flops + flops * random_dist(rng));
-            noisy_task_flops[t] = flops;
-        }
-
-        for (auto const &f : workflow->getFileMap()) {
-            f.second->setSize(noisy_file_sizes[f.second]);
-        }
-        for (auto const &t : workflow->getTasks()) {
-            t->setFlops(noisy_task_flops[t]);
-        }
 
 
-    } else if (noise_scheme == "micro-host") {
-        // Compute noisy host pstates and link bandwidth that children will use
-        // and thus incur simulation error (for the micro-platform scheme)
-        // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
-        std::unordered_map<std::string, int> noisy_host_pstates;
-        std::unordered_map<std::string, double> noisy_link_bandwidths;
+    if (previous_noise < 0.0) {
+
+//        std::cerr << "COMPUTING INITIAL NOISE\n";
+
+        std::uniform_real_distribution<double> random_dist(-noise, noise);
+        std::mt19937 rng(seed);
+
+        // Compute noisy tasks and file sizes that children will use and thus
+        // incur simulation errors (for the micro-application scheme)
+        if (noise_scheme == "micro-application") {
+
+            for (auto const &f: workflow->getFileMap()) {
+                double size = f.second->getSize();
+                size = std::max<double>(0, size + size * random_dist(rng));
+                noisy_file_sizes[f.second] = size;
+            }
+            for (auto const &t: workflow->getTasks()) {
+                double flops = t->getFlops();
+                flops = std::max<double>(0, flops + flops * random_dist(rng));
+                noisy_task_flops[t] = flops;
+            }
+
+        }  else if (noise_scheme == "micro-platform") {
+            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+            // and thus incur simulation error (for the micro-platform scheme)
+            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
 
 //        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
-        for (auto const &h : wrench::Simulation::getHostnameList()) {
-            int num_pstates = wrench::Simulation::getNumberofPstates(h);
-            int base_pstate = (num_pstates -1)/2;
-            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
-            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
-            new_pstate = std::max<int>(new_pstate, 0);
-            noisy_host_pstates[h] = new_pstate;
-//            std::cerr << "PSTATE BASE WAS " << base_pstate << " ---> " << new_pstate << "\n";
-        }
-        for (auto const &l : wrench::Simulation::getLinknameList()) {
-            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
-            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
-            noisy_link_bandwidths[l] = bandwidth;
-        }
+            auto cluster_map = wrench::Simulation::getHostnameListByCluster();
+            for (auto const &c: cluster_map) {
+                int num_pstates = wrench::Simulation::getNumberofPstates(c.second.at(0));
+                int base_pstate = (num_pstates - 1) / 2;
+                int new_pstate = base_pstate + (int) (random_dist(rng) * (num_pstates - 1) / 2);
+                new_pstate = std::min<int>(new_pstate, num_pstates - 1);
+                new_pstate = std::max<int>(new_pstate, 0);
+                for (auto const &h: c.second) {
+                    noisy_host_pstates[h] = new_pstate;
+                }
+            }
 
-        for (auto const &h : noisy_host_pstates) {
-            simulation->setPstate(h.first, h.second);
-        }
-        for (auto const &l : noisy_link_bandwidths) {
-            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
-            link->set_bandwidth(l.second);
-        }
-    } else if (noise_scheme == "micro-cluster") {
-        // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
-        // and thus incur simulation error (for the micro-platform scheme)
-        // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
-        std::unordered_map<std::string, int> noisy_host_pstates;
-        std::unordered_map<std::string, double> noisy_link_bandwidths;
-
-//        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
-        auto cluster_map = wrench::Simulation::getHostnameListByCluster();
-        for (auto const &c : cluster_map) {
-            int num_pstates = wrench::Simulation::getNumberofPstates(c.second.at(0));
-            int base_pstate = (num_pstates -1)/2;
-            int new_pstate = base_pstate + (int)(random_dist(rng) * (num_pstates -1)/2);
-            new_pstate = std::min<int>(new_pstate, num_pstates - 1);
-            new_pstate = std::max<int>(new_pstate, 0);
-            for (auto const &h: c.second) {
-                noisy_host_pstates[h] = new_pstate;
+            for (auto const &l: wrench::Simulation::getLinknameList()) {
+                double bandwidth = wrench::Simulation::getLinkBandwidth(l);
+                bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
+                noisy_link_bandwidths[l] = bandwidth;
             }
         }
 
-        for (auto const &l : wrench::Simulation::getLinknameList()) {
-            double bandwidth = wrench::Simulation::getLinkBandwidth(l);
-            bandwidth = std::max<double>(0, bandwidth + bandwidth * random_dist(rng));
-            noisy_link_bandwidths[l] = bandwidth;
+    } else {
+
+        if (noise == previous_noise) {
+            return;
         }
 
-        for (auto const &h : noisy_host_pstates) {
-            simulation->setPstate(h.first, h.second);
+        if (noise_scheme == "micro-application") {
+            throw std::runtime_error("micro-application noise mitigation not implemented yet!");
+
+        } else if (noise_scheme == "micro-platform") {
+            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+            // and thus incur simulation error (for the micro-platform scheme)
+            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
+
+//            std::cerr << "COMPUTING NOISE MITIGATION\n";
+
+            auto cluster_map = wrench::Simulation::getHostnameListByCluster();
+            for (auto const &c: cluster_map) {
+                for (auto const &h: c.second) {
+                    int num_pstates = wrench::Simulation::getNumberofPstates(h);
+                    int current_pstate = noisy_host_pstates[h];
+//                    std::cerr << "current_pstate = " << current_pstate << " / "  << num_pstates << "\n";
+                    int base_pstate = (num_pstates - 1) / 2;
+                    int delta_from_base = current_pstate - base_pstate;
+//                    std::cerr << "delta_from_base = " << delta_from_base << "\n";
+                    int new_pstate = base_pstate + (int)((double)delta_from_base * (noise / previous_noise));
+                    new_pstate = std::min<int>(new_pstate, num_pstates - 1);
+                    new_pstate = std::max<int>(new_pstate, 0);
+//                    std::cerr << "new_pstate = " << new_pstate << "\n";
+                    noisy_host_pstates[h] = new_pstate;
+                }
+            }
+
+            for (auto const &l: wrench::Simulation::getLinknameList()) {
+                double current_bandwidth = noisy_link_bandwidths[l];
+//                std::cerr << "current_bandwidth = " << current_bandwidth << "\n";
+                double original_bandwidth = this->original_link_bandwidths[l];
+//                std::cerr << "original_bandwidth = " << original_bandwidth << "\n";
+                double delta = (current_bandwidth - original_bandwidth);
+//                std::cerr << "delta = " << delta << "\n";
+                noisy_link_bandwidths[l] = original_bandwidth + delta * (noise / previous_noise);
+//                std::cerr << "new_bandwidth = " << noisy_link_bandwidths[l] << "\n";
+            }
+
         }
-        for (auto const &l : noisy_link_bandwidths) {
-            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
-            link->set_bandwidth(l.second);
+    }
+}
+
+
+
+void SimpleWMS::apply_micro_simulation_noise(wrench::Simulation *simulation,
+                                             const std::shared_ptr<wrench::Workflow>& workflow,
+                                             const std::string& noise_scheme,
+                                             double previous_noise,
+                                             double noise,
+                                             double seed,
+                                             std::unordered_map<std::shared_ptr<wrench::DataFile>, double> &noisy_file_sizes,
+                                             std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> &noisy_task_flops,
+                                             std::unordered_map<std::string, int> &noisy_host_pstates,
+                                             std::unordered_map<std::string, double> &noisy_link_bandwidths) {
+
+    if (noise <= 0.0) return;
+
+    if (previous_noise < 0.0) {
+
+        std::uniform_real_distribution<double> random_dist(-noise, noise);
+        std::mt19937 rng(seed);
+
+        // Compute noisy tasks and file sizes that children will use and thus
+        // incur simulation errors (for the micro-application scheme)
+        if (noise_scheme == "micro-application") {
+
+            for (auto const &f: workflow->getFileMap()) {
+                f.second->setSize(noisy_file_sizes[f.second]);
+            }
+            for (auto const &t: workflow->getTasks()) {
+                t->setFlops(noisy_task_flops[t]);
+            }
+
+        }  else if (noise_scheme == "micro-platform") {
+            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+            // and thus incur simulation error (for the micro-platform scheme)
+            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
+
+            //        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
+
+            for (auto const &h: noisy_host_pstates) {
+                simulation->setPstate(h.first, h.second);
+//                std::cerr << "  SETTING: " << h.first << " to pstate << " << h.second << "\n";
+            }
+            for (auto const &l: noisy_link_bandwidths) {
+                simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+                link->set_bandwidth(l.second);
+//                std::cerr << "  SETTING: " << l.first << " to bandwdith << " << l.second << "\n";
+            }
+        }
+
+    } else {
+
+        if (noise == previous_noise) {
+            return;
+        }
+
+        if (noise_scheme == "micro-application") {
+            throw std::runtime_error("micro-application noise mitigation not implemented yet!");
+
+        } else if (noise_scheme == "micro-platform") {
+            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+            // and thus incur simulation error (for the micro-platform scheme)
+            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
+
+            for (auto const &h: noisy_host_pstates) {
+                simulation->setPstate(h.first, h.second);
+//                std::cerr << "  SETTING: " << h.first << " to pstate << " << h.second << "\n";
+
+            }
+            for (auto const &l: noisy_link_bandwidths) {
+                simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+                link->set_bandwidth(l.second);
+//                std::cerr << "  SETTING: " << l.first << " to bandwdith << " << l.second << "\n";
+
+            }
         }
     }
 }
@@ -167,9 +255,16 @@ int SimpleWMS::main() {
     auto macro_rng = new std::mt19937(this->noise_seed);
     (*macro_random_dist)(*macro_rng);
 
-//    std::uniform_real_distribution<double> foo(-1,1);
-//    std::mt19937 faa(12);
-//    foo(faa);
+    // Set up original link bandwidth map
+    for (auto const &l: wrench::Simulation::getLinknameList()) {
+        simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l);
+        original_link_bandwidths[l] = link->get_bandwidth();
+    }
+
+    std::unordered_map<std::shared_ptr<wrench::DataFile>, double> noisy_file_sizes;
+    std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> noisy_task_flops;
+    std::unordered_map<std::string, int> noisy_host_pstates;
+    std::unordered_map<std::string, double> noisy_link_bandwidths;
 
     wrench::TerminalOutput::setThisProcessLoggingColor(wrench::TerminalOutput::COLOR_GREEN);
 
@@ -203,8 +298,11 @@ int SimpleWMS::main() {
     int pipefd[2];
 
     bool simulation_noise_has_changed = true;
+    double previous_noise = -1.0;
+
     /* Main simulation loop */
     while (true) {
+
 
         // Scheduler change?
         bool speculation_can_happen = ((not this->i_am_speculative) and
@@ -235,6 +333,13 @@ int SimpleWMS::main() {
 //        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
 
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
+
+            compute_micro_simulation_noise(this->simulation, workflow, this->simulation_noise_scheme,
+                                           previous_noise, this->simulation_noise, this->noise_seed,
+                                           noisy_file_sizes, noisy_task_flops, noisy_host_pstates,
+                                           noisy_link_bandwidths);
+
+
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "[" << wrench::Simulation::getCurrentSimulatedDate() << "] PARENT: " << getpid() << " Exploring scheduling algorithm futures speculatively... \n";
             std::cerr.flush();
@@ -256,17 +361,19 @@ int SimpleWMS::main() {
 
                     // Make the child mute
                     //std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
-                    close(STDOUT_FILENO);
-                    close(STDERR_FILENO);
+//                    close(STDOUT_FILENO);
+//                    close(STDERR_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
                     this->scheduler->useSchedulingAlgorithmNow(algorithm_index);
                     this->i_am_speculative = true;
 
-
                     // Apply all micro noise, if any
                     apply_micro_simulation_noise(this->simulation, workflow, this->simulation_noise_scheme,
-                                                 this->simulation_noise, this->noise_seed);
+                                                 previous_noise,
+                                                 this->simulation_noise, this->noise_seed,
+                                                 noisy_file_sizes, noisy_task_flops, noisy_host_pstates, noisy_link_bandwidths);
+
 
 
                     // Disable contention if need be
@@ -306,6 +413,7 @@ int SimpleWMS::main() {
 //                }
 
 //                std::cerr << "MASTER: REDUCING BY " << this->simulation_noise_reduction << "\n";
+                previous_noise = this->simulation_noise;
                 double current_noise = this->simulation_noise;
                 this->simulation_noise = std::max<double>(0, this->simulation_noise - this->simulation_noise_reduction);
                 if (this->at_most_one_noise_reduction) {

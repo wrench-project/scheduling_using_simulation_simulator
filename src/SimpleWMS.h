@@ -48,6 +48,27 @@ private:
     void processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) override;
     void processEventStandardJobFailure(std::shared_ptr<wrench::StandardJobFailedEvent> event) override;
 
+    void compute_micro_simulation_noise(wrench::Simulation *simulation,
+                                      const std::shared_ptr<wrench::Workflow>& workflow,
+                                      const std::string& noise_scheme,
+                                      double previous_noise,
+                                      double noise, double seed,
+                                      std::unordered_map<std::shared_ptr<wrench::DataFile>, double> &noisy_file_sizes,
+                                      std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> &noisy_task_flops,
+                                      std::unordered_map<std::string, int> &noisy_host_pstates,
+                                      std::unordered_map<std::string, double> &noisy_link_bandwidths);
+
+    void apply_micro_simulation_noise(wrench::Simulation *simulation,
+                                      const std::shared_ptr<wrench::Workflow>& workflow,
+                                      const std::string& noise_scheme,
+                                      double previous_noise,
+                                      double noise, double seed,
+                                      std::unordered_map<std::shared_ptr<wrench::DataFile>, double> &noisy_file_sizes,
+                                      std::unordered_map<std::shared_ptr<wrench::WorkflowTask>, double> &noisy_task_flops,
+                                      std::unordered_map<std::string, int> &noisy_host_pstates,
+                                      std::unordered_map<std::string, double> &noisy_link_bandwidths);
+
+
     std::shared_ptr<wrench::Workflow> workflow;
     SimpleStandardJobScheduler *scheduler;
     double first_scheduler_change_trigger;
@@ -70,6 +91,7 @@ private:
     std::shared_ptr<wrench::JobManager> job_manager;
     std::shared_ptr<wrench::DataMovementManager> data_movement_manager;
 
+    std::unordered_map<std::string, double> original_link_bandwidths;
 
     std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services;
     std::set<std::shared_ptr<wrench::StorageService>> storage_services;
