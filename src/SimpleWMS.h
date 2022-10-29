@@ -34,6 +34,7 @@ public:
               bool disable_contention,
               bool disable_adaptation_if_noise_has_not_changed,
               bool at_most_one_noise_reduction,
+              bool at_most_one_adaptation,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
               const std::string &hostname);
@@ -84,6 +85,7 @@ private:
     bool disable_contention;
     bool disable_adaptation_if_noise_has_not_changed;
     bool at_most_one_noise_reduction;
+    bool at_most_one_adaptation;
 
     double work_done_since_last_scheduler_change = 0.0;
     bool one_schedule_change_has_happened = false;

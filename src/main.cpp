@@ -125,6 +125,8 @@ int main(int argc, char **argv) {
              "Disable scheduling algorithm adaptation if simulation noise hasn't changed\n")
             ("at-most-one-noise-reduction",
              "Reduce noise at most once\n")
+            ("at-most-one-adaptation",
+             "Adapt at most once\n")
             ;
 
     // Parse command-line arguments
@@ -162,6 +164,9 @@ int main(int argc, char **argv) {
 
     // Disable adaption if noise hasn't changed
     bool at_most_one_noise_reduction = vm.count("at-most-one-noise-reduction") > 0;
+
+    // Adapt at most once adaption if noise hasn't changed
+    bool at_most_one_adaptation = vm.count("at-most-one-adaptation") > 0;
 
     // Check the noise scheme
     if (simulation_noise_scheme != "macro" and
@@ -252,6 +257,7 @@ int main(int argc, char **argv) {
     output_json["algorithm_selection_scheme"] = algorithm_selection_scheme;
     output_json["at_most_one_noise_reduction"] = at_most_one_noise_reduction;
     output_json["disable_adaptation_if_noise_has_not_changed"] = disable_adaptation_if_noise_has_not_changed;
+    output_json["at_most_one_adaptation"] = at_most_one_adaptation;
 
     output_json["no_contention"] = disable_contention;
 
@@ -341,6 +347,7 @@ int main(int argc, char **argv) {
                           disable_contention,
                           disable_adaptation_if_noise_has_not_changed,
                           at_most_one_noise_reduction,
+                          at_most_one_adaptation,
                           compute_services, storage_services, wms_host));
 
     // Set the amdahl parameter for each task between 0.5 and 0.9

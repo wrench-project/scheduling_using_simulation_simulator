@@ -34,6 +34,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      bool disable_contention,
                      bool disable_adaptation_if_noise_has_not_changed,
                      bool at_most_one_noise_reduction,
+                     bool at_most_one_adaptation,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
                      const std::string &hostname) : wrench::ExecutionController(
@@ -54,6 +55,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     disable_contention(disable_contention),
                                                     disable_adaptation_if_noise_has_not_changed(disable_adaptation_if_noise_has_not_changed),
                                                     at_most_one_noise_reduction(at_most_one_noise_reduction),
+                                                    at_most_one_adaptation(at_most_one_adaptation),
                                                     compute_services(std::move(compute_services)),
                                                     storage_services(std::move(storage_services)) { }
 
@@ -70,7 +72,6 @@ void SimpleWMS::compute_micro_simulation_noise(wrench::Simulation *simulation,
                                                std::unordered_map<std::string, double> &noisy_link_bandwidths) {
 
     if (noise <= 0.0) return;
-
 
 
     if (previous_noise < 0.0) {
@@ -123,8 +124,11 @@ void SimpleWMS::compute_micro_simulation_noise(wrench::Simulation *simulation,
     } else {
 
         if (noise == previous_noise) {
+//            std::cerr << "NEW NOISE IS SAME AS OLD NOISE - NOT RECOMPUTING MITIGATED NOISE\n";
             return;
         }
+
+//        std::cerr << "COMPUTING MITIGATED NOISE\n";
 
         if (noise_scheme == "micro-application") {
             throw std::runtime_error("micro-application noise mitigation not implemented yet!");
@@ -183,67 +187,33 @@ void SimpleWMS::apply_micro_simulation_noise(wrench::Simulation *simulation,
 
     if (noise <= 0.0) return;
 
-    if (previous_noise < 0.0) {
+    if (noise_scheme == "micro-application") {
 
-        std::uniform_real_distribution<double> random_dist(-noise, noise);
-        std::mt19937 rng(seed);
+//        std::cerr << "APPLYING MICRO NOISE\n";
 
-        // Compute noisy tasks and file sizes that children will use and thus
-        // incur simulation errors (for the micro-application scheme)
-        if (noise_scheme == "micro-application") {
-
-            for (auto const &f: workflow->getFileMap()) {
-                f.second->setSize(noisy_file_sizes[f.second]);
-            }
-            for (auto const &t: workflow->getTasks()) {
-                t->setFlops(noisy_task_flops[t]);
-            }
-
-        }  else if (noise_scheme == "micro-platform") {
-            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
-            // and thus incur simulation error (for the micro-platform scheme)
-            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
-
-            //        std::cerr << "MICRO APPLYNG NOISE " << noise << "\n";
-
-            for (auto const &h: noisy_host_pstates) {
-                simulation->setPstate(h.first, h.second);
-//                std::cerr << "  SETTING: " << h.first << " to pstate << " << h.second << "\n";
-            }
-            for (auto const &l: noisy_link_bandwidths) {
-                simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
-                link->set_bandwidth(l.second);
-//                std::cerr << "  SETTING: " << l.first << " to bandwdith << " << l.second << "\n";
-            }
+        for (auto const &f: workflow->getFileMap()) {
+            f.second->setSize(noisy_file_sizes[f.second]);
+        }
+        for (auto const &t: workflow->getTasks()) {
+            t->setFlops(noisy_task_flops[t]);
         }
 
-    } else {
+    }  else if (noise_scheme == "micro-platform") {
+        // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
+        // and thus incur simulation error (for the micro-platform scheme)
+        // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
 
-        if (noise == previous_noise) {
-            return;
-        }
-
-        if (noise_scheme == "micro-application") {
-            throw std::runtime_error("micro-application noise mitigation not implemented yet!");
-
-        } else if (noise_scheme == "micro-platform") {
-            // Compute noisy host pstates (homogeneous within a cluster) and link bandwidth that children will use
-            // and thus incur simulation error (for the micro-platform scheme)
-            // Note that this uses 100 pstates to make it possible to noisy-fy host speeds
-
-            for (auto const &h: noisy_host_pstates) {
-                simulation->setPstate(h.first, h.second);
+        for (auto const &h: noisy_host_pstates) {
+            simulation->setPstate(h.first, h.second);
 //                std::cerr << "  SETTING: " << h.first << " to pstate << " << h.second << "\n";
-
-            }
-            for (auto const &l: noisy_link_bandwidths) {
-                simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
-                link->set_bandwidth(l.second);
+        }
+        for (auto const &l: noisy_link_bandwidths) {
+            simgrid::s4u::Link *link = simgrid::s4u::Engine::get_instance()->link_by_name(l.first);
+            link->set_bandwidth(l.second);
 //                std::cerr << "  SETTING: " << l.first << " to bandwdith << " << l.second << "\n";
-
-            }
         }
     }
+
 }
 
 /**
@@ -299,10 +269,10 @@ int SimpleWMS::main() {
 
     bool simulation_noise_has_changed = true;
     double previous_noise = -1.0;
+    int num_adaptations = 0;
 
     /* Main simulation loop */
     while (true) {
-
 
         // Scheduler change?
         bool speculation_can_happen = ((not this->i_am_speculative) and
@@ -310,6 +280,10 @@ int SimpleWMS::main() {
         if (this->disable_adaptation_if_noise_has_not_changed and (not simulation_noise_has_changed)) {
             speculation_can_happen = false;
         }
+        if ((num_adaptations >= 2) and this->at_most_one_adaptation) {
+            speculation_can_happen = false;
+        }
+
         bool should_do_first_change = ((not this->one_schedule_change_has_happened) and (this->work_done_since_last_scheduler_change >= this->first_scheduler_change_trigger * total_work));
         bool should_do_next_change;
 
@@ -333,6 +307,7 @@ int SimpleWMS::main() {
 //        std::cerr << "should_do_next_change: " << should_do_next_change << "\n";
 
         if (speculation_can_happen and (should_do_first_change or should_do_next_change)) {
+            num_adaptations += 1;
 
             compute_micro_simulation_noise(this->simulation, workflow, this->simulation_noise_scheme,
                                            previous_noise, this->simulation_noise, this->noise_seed,
@@ -342,7 +317,7 @@ int SimpleWMS::main() {
 
             this->work_done_since_last_scheduler_change = 0.0;
 //            std::cerr << "[" << wrench::Simulation::getCurrentSimulatedDate() << "] PARENT: " << getpid() << " Exploring scheduling algorithm futures speculatively... \n";
-            std::cerr.flush();
+//            std::cerr.flush();
             std::vector<std::pair<double, double>> makespans_and_energies;
 
             delete macro_random_dist;
@@ -360,7 +335,7 @@ int SimpleWMS::main() {
 
 
                     // Make the child mute
-                    //std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
+//                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
 //                    close(STDOUT_FILENO);
 //                    close(STDERR_FILENO);
                     // Close the read end of the pipe
@@ -369,6 +344,7 @@ int SimpleWMS::main() {
                     this->i_am_speculative = true;
 
                     // Apply all micro noise, if any
+//                    std::cerr << "APPLYING SIMUILATION NOISE " << this->simulation_noise << "\n";
                     apply_micro_simulation_noise(this->simulation, workflow, this->simulation_noise_scheme,
                                                  previous_noise,
                                                  this->simulation_noise, this->noise_seed,
@@ -409,10 +385,11 @@ int SimpleWMS::main() {
 
             if (not this->i_am_speculative) {
 //                for (int i=0; i < makespans_and_energies.size(); i++) {
-//                    std::cerr << i << " " << makespans_and_energies.at(i).first << " " << makespans_and_energies.at(i).second << "\n";
+//                    std::cerr << "Alg " << i << " " << makespans_and_energies.at(i).first << std::endl;
 //                }
 
 //                std::cerr << "MASTER: REDUCING BY " << this->simulation_noise_reduction << "\n";
+//                std::cerr << "CURRENT SIMULATION NOISE " << this->simulation_noise << "\n";
                 previous_noise = this->simulation_noise;
                 double current_noise = this->simulation_noise;
                 this->simulation_noise = std::max<double>(0, this->simulation_noise - this->simulation_noise_reduction);
@@ -420,6 +397,7 @@ int SimpleWMS::main() {
                     this->simulation_noise_reduction = 0.0;
                 }
                 simulation_noise_has_changed = (std::abs<double>(current_noise - this->simulation_noise) > 0.0001);
+//                std::cerr << "NEW SIMULATION NOISE " << this->simulation_noise << "\n";
 
                 unsigned long argmin;
                 if (this->algorithm_selection_scheme == "makespan") {
