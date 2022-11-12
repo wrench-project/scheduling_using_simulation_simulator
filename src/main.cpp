@@ -261,6 +261,8 @@ int main(int argc, char **argv) {
 
     output_json["no_contention"] = disable_contention;
 
+    output_json["file_size_factor"] = file_size_factor;
+
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
         exit(0);
