@@ -336,8 +336,8 @@ int SimpleWMS::main() {
 
                     // Make the child mute
 //                    std::cerr <<  "Child exploring algorithm "  << algorithm_index << " (" <<  this->scheduler->algorithmIndexToString(algorithm_index) << ")\n";
-//                    close(STDOUT_FILENO);
-//                    close(STDERR_FILENO);
+                    close(STDOUT_FILENO);
+                    close(STDERR_FILENO);
                     // Close the read end of the pipe
                     close(pipefd[0]);
                     this->scheduler->useSchedulingAlgorithmNow(algorithm_index);
@@ -384,9 +384,9 @@ int SimpleWMS::main() {
             }
 
             if (not this->i_am_speculative) {
-//                for (int i=0; i < makespans_and_energies.size(); i++) {
-//                    std::cerr << "Alg " << i << " " << makespans_and_energies.at(i).first << std::endl;
-//                }
+                for (int i=0; i < makespans_and_energies.size(); i++) {
+                    std::cerr << "Alg " << i << " " << makespans_and_energies.at(i).first << std::endl;
+                }
 
 //                std::cerr << "MASTER: REDUCING BY " << this->simulation_noise_reduction << "\n";
 //                std::cerr << "CURRENT SIMULATION NOISE " << this->simulation_noise << "\n";

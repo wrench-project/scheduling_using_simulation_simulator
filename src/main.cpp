@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
     int simulation_noise_seed;
     std::string algorithm_selection_scheme;
     double energy_bound;
+    double file_size_factor;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -82,9 +83,6 @@ int main(int argc, char **argv) {
              "Print all scheduling algorithms available\n")
             ("print_JSON",
              "Print the JSON input configuration, without the actual simulation results\n")
-//            ("algorithms", po::value<std::string>(&algorithm_list)->required()->value_name("<list of algorithm #>"),
-//             "First one in the list will be used initially\nExample: --algorithms 0-4,12,15-17,19,21\n"
-//             "(use --list_all_algorithms to see the list of algorithms)\n")
             ("task_selection_schemes", po::value<std::string>(&task_selection_scheme_list)->required()->value_name("<list of task selection schemes to use>"),
                "command-separated list of task selection schemes to use\n")
             ("cluster_selection_schemes", po::value<std::string>(&cluster_selection_scheme_list)->required()->value_name("<list of cluster selection schemes to use>"),
@@ -127,6 +125,8 @@ int main(int argc, char **argv) {
              "Reduce noise at most once\n")
             ("at-most-one-adaptation",
              "Adapt at most once\n")
+            ("file_size_factor", po::value<double>(&file_size_factor)->value_name("<factor by which each file size is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000, "file_size_factor")),
+             "A factor by which each file size is multiplied\n")
             ;
 
     // Parse command-line arguments
@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
                         {})));
 
         storage_services.insert(simulation->add(
-                new wrench::SimpleStorageService(
+                wrench::SimpleStorageService::createSimpleStorageService(
                         head_node,
                         {"/"},
                         {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}},
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
+    auto wms_ss = simulation->add(wrench::SimpleStorageService::createSimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
@@ -335,6 +335,13 @@ int main(int argc, char **argv) {
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
     scheduler->computeNumbersOfChildren(workflow);
+
+    // Apply the file size factor
+    if (file_size_factor != 1.0) {
+        for (auto const &file: workflow->getFileMap()) {
+            file.second->setSize(file.second->getSize() * file_size_factor);
+        }
+    }
 
     // Create the WMS
     auto wms = simulation->add(
