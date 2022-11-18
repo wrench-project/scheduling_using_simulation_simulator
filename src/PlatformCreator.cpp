@@ -13,6 +13,8 @@ PlatformCreator::create_wms(const sg4::NetZone* root, std::string name, std::str
     auto wms_host_disk = wms_host->create_disk("hard_drive",
                                                "100MBps",
                                                "100MBps");
+    wms_host_disk->set_read_bandwidth(this->bandwidth_factor * wms_host_disk->get_read_bandwidth());
+    wms_host_disk->set_write_bandwidth(this->bandwidth_factor * wms_host_disk->get_write_bandwidth());
     wms_host_disk->set_property("size", "5000GiB");
     wms_host_disk->set_property("mount", "/");
 
@@ -157,6 +159,11 @@ void PlatformCreator::create_platform() {
                         {link1, link2});
             }
         }
+    }
+
+    // Apply the bandwidth factor to all links
+    for (const auto &link : zone->get_impl()->get_all_links()) {
+        link->set_bandwidth(this->bandwidth_factor * link->get_bandwidth());
     }
 
     zone->seal();

@@ -61,6 +61,7 @@ int main(int argc, char **argv) {
     std::string algorithm_selection_scheme;
     double energy_bound;
     double file_size_factor;
+    double bandwidth_factor;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -127,6 +128,8 @@ int main(int argc, char **argv) {
              "Adapt at most once\n")
             ("file_size_factor", po::value<double>(&file_size_factor)->value_name("<factor by which each file size is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000, "file_size_factor")),
              "A factor by which each file size is multiplied\n")
+            ("bandwidth_factor", po::value<double>(&bandwidth_factor)->value_name("<factor by which each bandwidth is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000, "file_size_factor")),
+             "A factor by which each bandwidth is multiplied\n")
             ;
 
     // Parse command-line arguments
@@ -262,6 +265,7 @@ int main(int argc, char **argv) {
     output_json["no_contention"] = disable_contention;
 
     output_json["file_size_factor"] = file_size_factor;
+    output_json["bandwidth_factor"] = bandwidth_factor;
 
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
@@ -271,7 +275,7 @@ int main(int argc, char **argv) {
     // Creation of the platform
     std::string wms_host = "wms_host";
     try {
-        PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>());
+        PlatformCreator platform_creator(wms_host, vm["clusters"].as<std::string>(), bandwidth_factor);
         simulation->instantiatePlatform(platform_creator);
     } catch (std::exception &e) {
         std::cerr << e.what() << "\n";
