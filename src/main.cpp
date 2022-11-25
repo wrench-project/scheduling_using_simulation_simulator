@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
             ("print_JSON",
              "Print the JSON input configuration, without the actual simulation results\n")
             ("task_selection_schemes", po::value<std::string>(&task_selection_scheme_list)->required()->value_name("<list of task selection schemes to use>"),
-               "command-separated list of task selection schemes to use\n")
+             "command-separated list of task selection schemes to use\n")
             ("cluster_selection_schemes", po::value<std::string>(&cluster_selection_scheme_list)->required()->value_name("<list of cluster selection schemes to use>"),
              "command-separated list of cluster selection schemes to use\n")
             ("core_selection_schemes", po::value<std::string>(&core_selection_scheme_list)->required()->value_name("<list of core selection schemes to use>"),
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
             ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->required()->value_name("<algorithm selection scheme>"),
              "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')\n")
             ("energy_bound", po::value<double>(&energy_bound)->value_name("<energy bound in Joules>")->default_value(-1.0),
-            "An energy bound to not overcome\n")
+             "An energy bound to not overcome\n")
             ("no-contention",
              "Disables network contention simulation (every link is a 'FATPIPE' in speculative executions)\n")
             ("adapt-only-if-noise-has-changed",
@@ -201,14 +201,14 @@ int main(int argc, char **argv) {
         auto tokens = SimpleStandardJobScheduler::stringSplit(task_selection_scheme_list, ',');
         std::sort(tokens.begin(), tokens.end());
         task_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
-                        [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
         for (const auto &scheme : tokens) {
             scheduler->enableTaskSelectionScheme(scheme);
         }
         tokens = SimpleStandardJobScheduler::stringSplit(cluster_selection_scheme_list, ',');
         std::sort(tokens.begin(), tokens.end());
         cluster_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
-                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+                                                        [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
         for (const auto &scheme : tokens) {
             scheduler->enableClusterSelectionScheme(scheme);
         }
@@ -311,10 +311,10 @@ int main(int argc, char **argv) {
                         {})));
 
         storage_services.insert(simulation->add(
-                new wrench::SimpleStorageService(
+                wrench::SimpleStorageService::createSimpleStorageService(
                         head_node,
                         {"/"},
-                        {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}},
+                        {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "0"}},
                         {})));
     }
 
@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
+    auto wms_ss = simulation->add(wrench::SimpleStorageService::createSimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "0"}}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
@@ -373,7 +373,7 @@ int main(int argc, char **argv) {
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {
 //        simulation->stageFile(f, wms_ss);
-        simulation->createFile(f, wrench::FileLocation::LOCATION(wms_ss));
+        simulation->createFile(wrench::FileLocation::LOCATION(wms_ss, f));
         scheduler->file_replica_locations[f].insert(wms_ss);
     }
 
