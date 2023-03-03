@@ -72,15 +72,15 @@ std::shared_ptr<wrench::FileLocation>  SimpleStandardJobScheduler::pick_location
     // Pick the WMS host if file is there
     for (auto const &ss : this->file_replica_locations[file]) {
         if (ss == this->map_compute_to_storage[compute_service]) {
-            picked_local_location = wrench::FileLocation::LOCATION(ss);
+            picked_local_location = wrench::FileLocation::LOCATION(ss, file);
             continue;
         }
         if (ss->getHostname() == this->wms_host) {
-            picked_wms_location = wrench::FileLocation::LOCATION(ss);
+            picked_wms_location = wrench::FileLocation::LOCATION(ss, file);
             continue;
         }
         if (picked_other_location == nullptr) {
-            picked_other_location = wrench::FileLocation::LOCATION(ss);;
+            picked_other_location = wrench::FileLocation::LOCATION(ss, file);;
             continue;
         }
     }
@@ -221,11 +221,11 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
             file_locations.insert(std::make_pair(file, picked_location));
         }
 
-        // Output file are all written locally
+        // Output file are all written locallycd
         std::shared_ptr<wrench::StorageService> target_ss = this->map_compute_to_storage[picked_service];
 
         for (const auto &f : task->getOutputFiles()) {
-            file_locations.insert(std::make_pair(f, wrench::FileLocation::LOCATION(target_ss)));
+            file_locations.insert(std::make_pair(f, wrench::FileLocation::LOCATION(target_ss, f)));
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);

@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
                         {})));
 
         storage_services.insert(simulation->add(
-                new wrench::SimpleStorageService(
+                wrench::SimpleStorageService::createSimpleStorageService(
                         head_node,
                         {"/"},
                         {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}},
@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation->add(new wrench::SimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
+    auto wms_ss = simulation->add(wrench::SimpleStorageService::createSimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
@@ -373,7 +373,7 @@ int main(int argc, char **argv) {
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {
 //        simulation->stageFile(f, wms_ss);
-        simulation->createFile(f, wrench::FileLocation::LOCATION(wms_ss));
+        simulation->stageFile(wrench::FileLocation::LOCATION(wms_ss, f));
         scheduler->file_replica_locations[f].insert(wms_ss);
     }
 

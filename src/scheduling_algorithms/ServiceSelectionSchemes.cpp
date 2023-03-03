@@ -104,7 +104,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             double data_bytes = 0;
             auto storage_service = this->map_compute_to_storage[s];
             for (auto const &f : task->getInputFiles()) {
-                if (wrench::StorageService::lookupFile(f, wrench::FileLocation::LOCATION(storage_service))) {
+                if (wrench::StorageService::lookupFileAtLocation(wrench::FileLocation::LOCATION(storage_service, f))) {
                     data_bytes += f->getSize();
                 }
             }
@@ -125,7 +125,7 @@ void SimpleStandardJobScheduler::initClusterSelectionSchemes() {
             double data_bytes = 0;
             auto storage_service = this->map_compute_to_storage[s];
             for (auto const &f : task->getInputFiles()) {
-                if (wrench::StorageService::lookupFile(f, wrench::FileLocation::LOCATION(storage_service))) {
+                if (wrench::StorageService::lookupFileAtLocation(wrench::FileLocation::LOCATION(storage_service, f))) {
                     data_bytes += f->getSize();
                 }
             }
