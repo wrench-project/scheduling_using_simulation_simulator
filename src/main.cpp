@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
                 wrench::SimpleStorageService::createSimpleStorageService(
                         head_node,
                         {"/"},
-                        {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}},
+                        {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "infinity"}},
                         {})));
     }
 
@@ -327,7 +327,7 @@ int main(int argc, char **argv) {
     }
 
     // Create a Storage Service on the WMS host
-    auto wms_ss = simulation->add(wrench::SimpleStorageService::createSimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "1000000000"}}, {}));
+    auto wms_ss = simulation->add(wrench::SimpleStorageService::createSimpleStorageService(wms_host, {"/"}, {{wrench::SimpleStorageServiceProperty::BUFFER_SIZE, "infinity"}}, {}));
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
