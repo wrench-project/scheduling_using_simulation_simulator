@@ -221,7 +221,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
             file_locations.insert(std::make_pair(file, picked_location));
         }
 
-        // Output file are all written locallycd
+        // Output file are all written locally
         std::shared_ptr<wrench::StorageService> target_ss = this->map_compute_to_storage[picked_service];
 
         for (const auto &f : task->getOutputFiles()) {

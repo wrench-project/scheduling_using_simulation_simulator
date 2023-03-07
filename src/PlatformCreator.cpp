@@ -15,7 +15,7 @@ PlatformCreator::create_wms(const sg4::NetZone* root, std::string name, std::str
                                                "100MBps");
     wms_host_disk->set_read_bandwidth(this->bandwidth_factor * wms_host_disk->get_read_bandwidth());
     wms_host_disk->set_write_bandwidth(this->bandwidth_factor * wms_host_disk->get_write_bandwidth());
-    wms_host_disk->set_property("size", "5000GiB");
+    wms_host_disk->set_property("size", "5000TiB");
     wms_host_disk->set_property("mount", "/");
 
     auto link = zone->create_link(name+"-link", bandwidth)->set_latency("20us");
@@ -90,12 +90,12 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
             auto disk1 = host->create_disk(name + "-fs",
                                            "1000TBps",
                                            "1000TBps");
-            disk1->set_property("size", "5000GiB");
+            disk1->set_property("size", "5000TiB");
             disk1->set_property("mount", "/");
             auto disk2 = host->create_disk(name + "-scratch",
                                            "1000TBps",
                                            "1000TBps");
-            disk2->set_property("size", "5000GiB");
+            disk2->set_property("size", "5000TiB");
             disk2->set_property("mount", "/scratch");
         }
 
