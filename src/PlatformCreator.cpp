@@ -100,7 +100,7 @@ PlatformCreator::create_cluster(const std::string name, const sg4::NetZone* root
         }
 
         /* create UP/DOWN link */
-        const sg4::Link* link = cluster->create_split_duplex_link(hostname, "100GBps")->set_latency("10us")->seal();
+        const sg4::Link* link = cluster->create_split_duplex_link(hostname, "100Gbps")->set_latency("10us")->seal();
 
         /* add link and backbone for communications from the host */
         cluster->add_route(host->get_netpoint(), nullptr, nullptr, nullptr,

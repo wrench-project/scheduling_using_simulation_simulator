@@ -32,6 +32,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      std::string &algorithm_selection_scheme,
                      double simulation_overhead,
                      bool disable_contention,
+                     bool disable_contention_in_speculative_executions,
                      bool disable_adaptation_if_noise_has_not_changed,
                      bool at_most_one_noise_reduction,
                      bool at_most_one_adaptation,
@@ -53,6 +54,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     algorithm_selection_scheme(algorithm_selection_scheme),
                                                     simulation_overhead(simulation_overhead),
                                                     disable_contention(disable_contention),
+                                                    disable_contention_in_speculative_executions(disable_contention_in_speculative_executions),
                                                     disable_adaptation_if_noise_has_not_changed(disable_adaptation_if_noise_has_not_changed),
                                                     at_most_one_noise_reduction(at_most_one_noise_reduction),
                                                     at_most_one_adaptation(at_most_one_adaptation),
@@ -221,6 +223,12 @@ void SimpleWMS::apply_micro_simulation_noise(wrench::Simulation *simulation,
 */
 int SimpleWMS::main() {
 
+    if (this->disable_contention) {
+        for (auto const &link : simgrid::s4u::Engine::get_instance()->get_all_links()) {
+            link->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::FATPIPE);
+        }
+    }
+
     auto macro_random_dist = new std::uniform_real_distribution<double>(-this->simulation_noise, this->simulation_noise);
     auto macro_rng = new std::mt19937(this->noise_seed);
     (*macro_random_dist)(*macro_rng);
@@ -353,7 +361,7 @@ int SimpleWMS::main() {
 
 
                     // Disable contention if need be
-                    if (this->disable_contention) {
+                    if (this->disable_contention_in_speculative_executions) {
                         for (auto const &link : simgrid::s4u::Engine::get_instance()->get_all_links()) {
                             link->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::FATPIPE);
                         }
