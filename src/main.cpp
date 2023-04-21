@@ -15,6 +15,8 @@
 #include <boost/program_options.hpp>
 #include <random>
 #include <nlohmann/json.hpp>
+#include <sys/time.h>
+
 
 
 namespace po = boost::program_options;
@@ -389,20 +391,23 @@ int main(int argc, char **argv) {
     simulation->getOutput().enableWorkflowTaskTimestamps(false);
     // Launch the simulation
 //    std::cerr << "Launching the Simulation..." << std::endl;
-    auto simulation_begin_time = time(NULL);
+    struct timeval begin_sim, end_sim;
+
+    gettimeofday(&begin_sim, NULL);
     try {
         simulation->launch();
     } catch (std::runtime_error &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 0;
     }
+    gettimeofday(&end_sim, NULL);
 
     if (wms->i_am_speculative) {
         exit(0);
     }
 
     // Output
-    output_json["simulation_time"] = time(NULL) - simulation_begin_time;
+    output_json["simulation_time"] = (((end_sim.tv_sec * 1000000) + end_sim.tv_usec) - ((begin_sim.tv_sec * 1000000) + begin_sim.tv_usec))/1000000.0;
 
     output_json["makespan"] = workflow->getCompletionDate();
 
