@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 
 find_package(SimGrid REQUIRED)
-#find_package(Boost REQUIRED)
+find_package(WRENCH REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 # include directories for dependencies and WRENCH libraries
