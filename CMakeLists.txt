@@ -26,7 +26,16 @@ include_directories(src/ ${SimGrid_INCLUDE_DIR}/include /usr/local/include /opt/
 
 # source files
 set(SOURCE_FILES
+        src/SimpleWMS.h
+        src/SimpleWMS.cpp
+        src/SimpleStandardJobScheduler.h
+        src/SimpleStandardJobScheduler.cpp
+        src/scheduling_algorithms/TaskPrioritySchemes.cpp
+        src/scheduling_algorithms/ServiceSelectionSchemes.cpp
+        src/scheduling_algorithms/CoreSelectionSchemes.cpp
         src/main.cpp
+        src/PlatformCreator.cpp
+        src/PlatformCreator.h
         )
 
 # test files
@@ -38,17 +47,17 @@ find_library(WRENCH_LIBRARY NAMES wrench)
 find_library(WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY NAMES wrenchwfcommonsworkflowparser)
 
 # generating the executable
-add_executable(workflow_analyzer ${SOURCE_FILES})
+add_executable(scheduling_using_simulation_simulator ${SOURCE_FILES})
 
 if (ENABLE_BATSCHED)
-    target_link_libraries(workflow_analyzer
+    target_link_libraries(scheduling_using_simulation_simulator
             ${WRENCH_LIBRARY}
             ${WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
             ${Boost_LIBRARIES}
             -lzmq )
 else()
-    target_link_libraries(workflow_analyzer
+    target_link_libraries(scheduling_using_simulation_simulator
             ${WRENCH_LIBRARY}
             ${WRENCH_WFCOMMONS_WORKFLOW_PARSER_LIBRARY}
             ${SimGrid_LIBRARY}
@@ -56,4 +65,4 @@ else()
             )
 endif()
 
-install(TARGETS workflow_analyzer DESTINATION bin)
+install(TARGETS scheduling_using_simulation_simulator DESTINATION bin)
