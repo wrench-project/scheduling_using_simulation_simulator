@@ -33,6 +33,7 @@ public:
               double simulation_overhead,
               bool disable_contention,
               bool disable_contention_in_speculative_executions,
+              bool disable_amdahl_in_speculative_executions,
               bool disable_adaptation_if_noise_has_not_changed,
               bool at_most_one_noise_reduction,
               bool at_most_one_adaptation,
@@ -85,6 +86,7 @@ private:
     double simulation_overhead;
     bool disable_contention;
     bool disable_contention_in_speculative_executions;
+    bool disable_amdahl_in_speculative_executions;
     bool disable_adaptation_if_noise_has_not_changed;
     bool at_most_one_noise_reduction;
     bool at_most_one_adaptation;

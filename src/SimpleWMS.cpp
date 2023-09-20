@@ -33,6 +33,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      double simulation_overhead,
                      bool disable_contention,
                      bool disable_contention_in_speculative_executions,
+                     bool disable_amdahl_in_speculative_executions,
                      bool disable_adaptation_if_noise_has_not_changed,
                      bool at_most_one_noise_reduction,
                      bool at_most_one_adaptation,
@@ -55,6 +56,7 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     simulation_overhead(simulation_overhead),
                                                     disable_contention(disable_contention),
                                                     disable_contention_in_speculative_executions(disable_contention_in_speculative_executions),
+                                                    disable_amdahl_in_speculative_executions(disable_amdahl_in_speculative_executions),
                                                     disable_adaptation_if_noise_has_not_changed(disable_adaptation_if_noise_has_not_changed),
                                                     at_most_one_noise_reduction(at_most_one_noise_reduction),
                                                     at_most_one_adaptation(at_most_one_adaptation),
@@ -364,6 +366,13 @@ int SimpleWMS::main() {
                     if (this->disable_contention_in_speculative_executions) {
                         for (auto const &link : simgrid::s4u::Engine::get_instance()->get_all_links()) {
                             link->set_sharing_policy(simgrid::s4u::Link::SharingPolicy::FATPIPE);
+                        }
+                    }
+
+                    // Disable amdahl if need be
+                    if (this->disable_amdahl_in_speculative_executions) {
+                        for (auto const &task : this->workflow->getTasks())  {
+                            task->setParallelModel(wrench::ParallelModel::CONSTANTEFFICIENCY(1.0));
                         }
                     }
 

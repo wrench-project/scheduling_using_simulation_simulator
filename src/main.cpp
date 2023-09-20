@@ -124,6 +124,8 @@ int main(int argc, char **argv) {
              "Disables network contention simulation overall (every link is a 'FATPIPE' in all executions)\n")
             ("no-contention-in-speculative-executions",
              "Disables network contention simulation in speculative executions (every link is a 'FATPIPE' in speculative executions)\n")
+            ("no-amdahl-in-speculative-executions",
+             "Sets Amdahl's alpha parameter to 1.0 for all tasks in speculative executions\n")
             ("adapt-only-if-noise-has-changed",
              "Disable scheduling algorithm adaptation if simulation noise hasn't changed\n")
             ("at-most-one-noise-reduction",
@@ -168,6 +170,9 @@ int main(int argc, char **argv) {
 
     // Disable/enable contention
     bool disable_contention_in_speculative_executions = vm.count("no-contention-in-speculative-executions") > 0;
+
+    // Disable/enable amdahl
+    bool disable_amdahl_in_speculative_executions = vm.count("no-amdahl-in-speculative-executions") > 0;
 
     // Disable adaption if noise hasn't changed
     bool disable_adaptation_if_noise_has_not_changed = vm.count("adapt-only-if-noise-has-changed") > 0;
@@ -272,6 +277,8 @@ int main(int argc, char **argv) {
     output_json["no_contention"] = disable_contention;
     output_json["no_contention_in_speculative_executions"] = disable_contention_in_speculative_executions;
 
+    output_json["no_amdahl_in_speculative_executions"] = disable_amdahl_in_speculative_executions;
+
     output_json["file_size_factor"] = file_size_factor;
     output_json["bandwidth_factor"] = bandwidth_factor;
 
@@ -368,6 +375,7 @@ int main(int argc, char **argv) {
                           algorithm_selection_scheme, simulation_overhead,
                           disable_contention,
                           disable_contention_in_speculative_executions,
+                          disable_amdahl_in_speculative_executions,
                           disable_adaptation_if_noise_has_not_changed,
                           at_most_one_noise_reduction,
                           at_most_one_adaptation,
