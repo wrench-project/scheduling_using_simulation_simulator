@@ -372,7 +372,9 @@ int SimpleWMS::main() {
                     // Disable amdahl if need be
                     if (this->disable_amdahl_in_speculative_executions) {
                         for (auto const &task : this->workflow->getTasks())  {
-                            task->setParallelModel(wrench::ParallelModel::CONSTANTEFFICIENCY(1.0));
+                            //  task->setParallelModel(wrench::ParallelModel::CONSTANTEFFICIENCY(1.0));
+                            auto model = std::dynamic_pointer_cast<wrench::AmdahlParallelModel>(task->getParallelModel());
+                            model->setAlpha(1.0);
                         }
                     }
 
