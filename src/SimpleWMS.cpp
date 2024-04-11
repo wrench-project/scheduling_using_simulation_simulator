@@ -547,6 +547,7 @@ int SimpleWMS::main() {
 
 void SimpleWMS::processEventStandardJobCompletion(std::shared_ptr<wrench::StandardJobCompletedEvent> event) {
     auto task = event->standard_job->getTasks().at(0);
+//    std::cerr << wrench::Simulation::getCurrentSimulatedDate() << ": COMPLETED: " << task->getID() << ": " << task->getNumCoresAllocated() << "\n";
 //    std::cerr << "JOB COMPLETED: task " << task->getID() << " (" << task->getExecutionHost() << ", " << task->getNumCoresAllocated() << ")\n";
     this->work_done_since_last_scheduler_change += task->getFlops();
     auto created_files = task->getOutputFiles();

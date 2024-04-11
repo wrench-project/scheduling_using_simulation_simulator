@@ -11,13 +11,12 @@
 #include "SimpleStandardJobScheduler.h"
 #include "SimpleWMS.h"
 #include "PlatformCreator.h"
+#include "WorkflowCreator.h"
 #include <memory>
 #include <boost/program_options.hpp>
 #include <random>
 #include <nlohmann/json.hpp>
 #include <sys/time.h>
-
-
 
 namespace po = boost::program_options;
 
@@ -64,6 +63,8 @@ int main(int argc, char **argv) {
     double energy_bound;
     double file_size_factor;
     double bandwidth_factor;
+    int initial_load_max_duration;
+    int initial_load_duration_seed;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
             ("print_JSON",
              "Print the JSON input configuration, without the actual simulation results\n")
             ("task_selection_schemes", po::value<std::string>(&task_selection_scheme_list)->required()->value_name("<list of task selection schemes to use>"),
-               "command-separated list of task selection schemes to use\n")
+             "command-separated list of task selection schemes to use\n")
             ("cluster_selection_schemes", po::value<std::string>(&cluster_selection_scheme_list)->required()->value_name("<list of cluster selection schemes to use>"),
              "command-separated list of cluster selection schemes to use\n")
             ("core_selection_schemes", po::value<std::string>(&core_selection_scheme_list)->required()->value_name("<list of core selection schemes to use>"),
@@ -105,7 +106,7 @@ int main(int argc, char **argv) {
              "(between 0.0 and 1, 1 meaning \"until workflow completion\")\n")
             ("simulation_noise_scheme", po::value<std::string>(&simulation_noise_scheme)->required()->value_name("<simulation noise scheme>"),
              "(either 'macro' (makespan scaling), 'micro-application' (flops and byte scaling), 'micro-platform (cluster flop/sec and link byte/sec\n")
-            ("simulation_overhead", po::value<double>(&simulation_overhead)->value_name("<simulation overhead in seconds>")->default_value(0.0)->notifier(in(0.0, 1000000, "per_algorithm_simulation_overhead")),
+            ("simulation_overhead", po::value<double>(&simulation_overhead)->value_name("<simulation overhead in seconds>")->default_value(0.0)->notifier(in(0.0, 1000000.0, "per_algorithm_simulation_overhead")),
              "The overhead, in seconds, of simulating one future execution\n")
             ("simulation_noise", po::value<double>(&simulation_noise)->value_name("<simulation noise>")->default_value(0.0)->notifier(in(0.0, 1.0, "simulation_noise")),
              "The added uniformly distributed noise added to speculative simulation results "
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
             ("algorithm_selection_scheme", po::value<std::string>(&algorithm_selection_scheme)->required()->value_name("<algorithm selection scheme>"),
              "('makespan', 'energy', 'makespan_over_energy', 'makespan_given_energy_bound')\n")
             ("energy_bound", po::value<double>(&energy_bound)->value_name("<energy bound in Joules>")->default_value(-1.0),
-            "An energy bound to not overcome\n")
+             "An energy bound to not overcome\n")
             ("no-contention",
              "Disables network contention simulation overall (every link is a 'FATPIPE' in all executions)\n")
             ("no-contention-in-speculative-executions",
@@ -132,10 +133,15 @@ int main(int argc, char **argv) {
              "Reduce noise at most once\n")
             ("at-most-one-adaptation",
              "Adapt at most once\n")
-            ("file_size_factor", po::value<double>(&file_size_factor)->value_name("<factor by which each file size is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000, "file_size_factor")),
+            ("file_size_factor", po::value<double>(&file_size_factor)->value_name("<factor by which each file size is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000.0, "file_size_factor")),
              "A factor by which each file size is multiplied\n")
-            ("bandwidth_factor", po::value<double>(&bandwidth_factor)->value_name("<factor by which each bandwidth is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000, "file_size_factor")),
+            ("bandwidth_factor", po::value<double>(&bandwidth_factor)->value_name("<factor by which each bandwidth is multiplied>")->default_value(1.0)->notifier(in(0.0, 1000000.0, "file_size_factor")),
              "A factor by which each bandwidth is multiplied\n")
+            ("initial_load_max_duration", po::value<int>(&initial_load_max_duration)->value_name("<initial load max duration>")->default_value(0)->notifier(in(0, INT_MAX, "initial_load_max_duration")),
+             "The maximum duration being executed on a (fastest) core before that core becomes available to the workflow (the actual duration is sampled uniformly between and the max)\n")
+            ("initial_load_duration_seed", po::value<int>(&initial_load_duration_seed)->value_name("<initial load duration seed>")->default_value(42)->notifier(in(1, 200000, "initial_load_duration_seed")),
+             "The seed used for the RNG that generates initial duration "
+             "(between 1 and 200000)\n")
             ;
 
     // Parse command-line arguments
@@ -213,14 +219,14 @@ int main(int argc, char **argv) {
         auto tokens = SimpleStandardJobScheduler::stringSplit(task_selection_scheme_list, ',');
         std::sort(tokens.begin(), tokens.end());
         task_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
-                        [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
         for (const auto &scheme : tokens) {
             scheduler->enableTaskSelectionScheme(scheme);
         }
         tokens = SimpleStandardJobScheduler::stringSplit(cluster_selection_scheme_list, ',');
         std::sort(tokens.begin(), tokens.end());
         cluster_selection_scheme_list = std::accumulate(tokens.begin(), tokens.end(), std::string(""),
-                                                     [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
+                                                        [](const std::string &a, const std::string &b) { if (a.empty()) return a + b; else return a+","+b;});
         for (const auto &scheme : tokens) {
             scheduler->enableClusterSelectionScheme(scheme);
         }
@@ -281,6 +287,9 @@ int main(int argc, char **argv) {
 
     output_json["file_size_factor"] = file_size_factor;
     output_json["bandwidth_factor"] = bandwidth_factor;
+
+    output_json["initial_load_max_duration"] = initial_load_max_duration;
+    output_json["initial_load_duration_seed"] = initial_load_duration_seed;
 
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
@@ -347,23 +356,16 @@ int main(int argc, char **argv) {
     storage_services.insert(wms_ss);
     wms_ss->setNetworkTimeoutValue(DBL_MAX);
 
-
-    // Parse the workflow
-    // As a performance optimization, in this whole simulator, instead of calling getMinNumCores() and getMaxNumCores(), we just
-    // hardcode 1 and 64. Check out the macros.
-    auto workflow = wrench::WfCommonsWorkflowParser::createWorkflowFromJSON(
-            workflow_file, reference_flops, true, false, true, 1, 64, true, true, false);
+    // Create the workflow
+    auto workflow = WorkflowCreator::create_workflow(workflow_file, reference_flops,
+                                                     file_size_factor,
+                                                     initial_load_max_duration,
+                                                     initial_load_duration_seed,
+                                                     vm["clusters"].as<std::string>());
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
     scheduler->computeNumbersOfChildren(workflow);
-
-    // Apply the file size factor
-    if (file_size_factor != 1.0) {
-        for (auto const &file: workflow->getFileMap()) {
-            file.second->setSize(file.second->getSize() * file_size_factor);
-        }
-    }
 
     // Create the WMS
     auto wms = simulation->add(
@@ -399,16 +401,16 @@ int main(int argc, char **argv) {
     simulation->getOutput().enableWorkflowTaskTimestamps(false);
     // Launch the simulation
 //    std::cerr << "Launching the Simulation..." << std::endl;
-    struct timeval begin_sim, end_sim;
+    struct timeval begin_sim{}, end_sim{};
 
-    gettimeofday(&begin_sim, NULL);
+    gettimeofday(&begin_sim, nullptr);
     try {
         simulation->launch();
     } catch (std::runtime_error &e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         return 0;
     }
-    gettimeofday(&end_sim, NULL);
+    gettimeofday(&end_sim, nullptr);
 
     if (wms->i_am_speculative) {
         exit(0);

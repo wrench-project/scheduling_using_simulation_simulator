@@ -151,7 +151,13 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 //    WRENCH_INFO("PICKING SERVICE %s", std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm]).c_str());
     *picked_service = this->cluster_selection_schemes[std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, possible_services);
 //    WRENCH_INFO("PICKING NUM_CORES");
-    *picked_num_cores = this->core_selection_schemes[std::get<2>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, *picked_service);
+    // If it's a ficticious initial load task, it uses a single core and that's it
+    if (task->getID().rfind("initial_load_task_", 0) == 0) {
+        *picked_num_cores = 1;
+    } else {
+        *picked_num_cores = this->core_selection_schemes[std::get<2>(
+                this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, *picked_service);
+    }
     for (auto const &entry : this->idle_cores_map[*picked_service]) {
         if (entry.second >= *picked_num_cores) {
             picked_host = entry.first;
@@ -229,6 +235,7 @@ void SimpleStandardJobScheduler::scheduleTasks(std::vector<std::shared_ptr<wrenc
         }
 
         auto job = this->job_manager->createStandardJob(task, file_locations);
+//        std::cerr << wrench::Simulation::getCurrentSimulatedDate() << ": SUBMITTING TASK: " << task->getID() << "\n";
         this->job_manager->submitJob(job, picked_service, {{task->getID(), picked_host + ":" + std::to_string(picked_num_cores)}});
 
     }

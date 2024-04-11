@@ -185,7 +185,7 @@ void PlatformCreator::create_platform() {
 
 
 
-std::tuple<int, int, std::string, std::string, std::string, std::string> PlatformCreator::parseClusterSpecification(std::string spec) {
+std::tuple<int, int, std::string, std::string, std::string, std::string> PlatformCreator::parseClusterSpecification(const std::string& spec) {
     auto tokens = SimpleStandardJobScheduler::stringSplit(spec, ':');
 
     if (tokens.size() != 6) {

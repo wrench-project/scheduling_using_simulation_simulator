@@ -36,6 +36,8 @@ set(SOURCE_FILES
         src/main.cpp
         src/PlatformCreator.cpp
         src/PlatformCreator.h
+        src/WorkflowCreator.cpp
+        src/WorkflowCreator.h
         )
 
 # test files
