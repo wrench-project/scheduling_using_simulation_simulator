@@ -13,6 +13,7 @@ std::shared_ptr<wrench::Workflow> WorkflowCreator::create_workflow(
         double file_size_factor,
         int initial_load_max_duration,
         int initial_load_duration_seed,
+        double initial_load_prob_core_loaded,
         const std::string& cluster_specs) {
 
     // Parse the workflow
@@ -53,11 +54,14 @@ std::shared_ptr<wrench::Workflow> WorkflowCreator::create_workflow(
             }
         }
 
-        // Create as many fictitious tasks as cores -1, making sure that each of them
+        // Compute the number of other fictitious tasks to create based on the probability of being loaded
+        int num_initial_load_tasks = (int) std::floor(initial_load_prob_core_loaded * (total_num_cores -1));
+
+        // Create  fictitious tasks, making sure that each of them
         // runs for at least 1s on any core
         auto macro_random_dist = new std::uniform_real_distribution<double>(highest_flop_rate * 1.0, highest_flop_rate * initial_load_max_duration);
         auto macro_rng = new std::mt19937(initial_load_duration_seed);
-        for (int i=0; i < total_num_cores - 1; i++) {
+        for (int i=0; i < num_initial_load_tasks - 1; i++) {
             double flops = (*macro_random_dist)(*macro_rng);
             workflow->addTask("initial_load_task_" + std::to_string(i), flops, 1, 1, 0.0);
         }

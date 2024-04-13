@@ -13,6 +13,7 @@ public:
             double file_size_factor,
             int initial_load_max_duration,
             int initial_load_duration_seed,
+            double initial_load_prob_core_loaded,
             const std::string& cluster_specs);
 
 };

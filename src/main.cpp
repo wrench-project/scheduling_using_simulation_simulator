@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
     double bandwidth_factor;
     int initial_load_max_duration;
     int initial_load_duration_seed;
+    double initial_load_prob_core_loaded;
 
     // Define command-line argument options
     po::options_description desc("Allowed options");
@@ -142,6 +143,9 @@ int main(int argc, char **argv) {
             ("initial_load_duration_seed", po::value<int>(&initial_load_duration_seed)->value_name("<initial load duration seed>")->default_value(42)->notifier(in(1, 200000, "initial_load_duration_seed")),
              "The seed used for the RNG that generates initial duration "
              "(between 1 and 200000)\n")
+            ("initial_load_prob_core_loaded", po::value<double>(&initial_load_prob_core_loaded)->value_name("<initial load probability core is loaded>")->default_value(0)->notifier(in(0.0, 1.0, "initial_load_prob_core_loaded")),
+             "The probability that a core is initially loaded "
+             "(between 0.0 and 1.0)\n")
             ;
 
     // Parse command-line arguments
@@ -290,6 +294,7 @@ int main(int argc, char **argv) {
 
     output_json["initial_load_max_duration"] = initial_load_max_duration;
     output_json["initial_load_duration_seed"] = initial_load_duration_seed;
+    output_json["initial_load_prob_core_loaded"] = initial_load_prob_core_loaded;
 
     if (vm.count("print_JSON")) {
         std::cout << output_json.dump() << std::endl;
@@ -361,6 +366,7 @@ int main(int argc, char **argv) {
                                                      file_size_factor,
                                                      initial_load_max_duration,
                                                      initial_load_duration_seed,
+                                                     initial_load_prob_core_loaded,
                                                      vm["clusters"].as<std::string>());
 
     // Compute all task bottom levels, which is useful for some scheduling options

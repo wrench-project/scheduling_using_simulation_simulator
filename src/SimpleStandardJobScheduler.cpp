@@ -149,9 +149,14 @@ bool SimpleStandardJobScheduler::scheduleTask(const std::shared_ptr<wrench::Work
 
     picked_host = "";
 //    WRENCH_INFO("PICKING SERVICE %s", std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm]).c_str());
-    *picked_service = this->cluster_selection_schemes[std::get<1>(this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, possible_services);
+    if (task->getID().rfind("initial_load_task_", 0) == 0) {
+        *picked_service = this->cluster_selection_schemes["random"](task, possible_services);
+    } else {
+        *picked_service = this->cluster_selection_schemes[std::get<1>(
+                this->enabled_scheduling_algorithms[this->current_scheduling_algorithm])](task, possible_services);
+    }
+
 //    WRENCH_INFO("PICKING NUM_CORES");
-    // If it's a ficticious initial load task, it uses a single core and that's it
     if (task->getID().rfind("initial_load_task_", 0) == 0) {
         *picked_num_cores = 1;
     } else {
