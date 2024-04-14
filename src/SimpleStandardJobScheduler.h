@@ -31,7 +31,10 @@ public:
             std::shared_ptr<wrench::JobManager> job_manager,
             std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
             std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-            std::string wms_host);
+            std::string wms_host,
+            double initial_load_max_duration,
+            int initial_load_duration_seed,
+            double initial_load_prob_core_loaded);
 
     void enableTaskSelectionScheme(const std::string& scheme);
     void enableClusterSelectionScheme(const std::string& scheme);
@@ -58,6 +61,10 @@ public:
     std::unordered_map<std::shared_ptr<wrench::BareMetalComputeService>, double> core_flop_rate_map;
     std::unordered_map<std::shared_ptr<wrench::BareMetalComputeService>, std::map<std::string, unsigned long>> idle_cores_map;
     std::unordered_map<std::shared_ptr<wrench::DataFile>, std::set<std::shared_ptr<wrench::StorageService>>> file_replica_locations;
+
+    void createInitialLoad(int initial_load_max_duration,
+                           int initial_load_duration_seed,
+                           double initial_load_prob_core_loaded);
 
 private:
 

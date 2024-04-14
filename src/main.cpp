@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     // all scheduling schemes
     auto scheduler = new SimpleStandardJobScheduler();
 
+
     std::string cluster_specs;
     std::string reference_flops;
     std::string task_selection_scheme_list;
@@ -364,14 +365,12 @@ int main(int argc, char **argv) {
     // Create the workflow
     auto workflow = WorkflowCreator::create_workflow(workflow_file, reference_flops,
                                                      file_size_factor,
-                                                     initial_load_max_duration,
-                                                     initial_load_duration_seed,
-                                                     initial_load_prob_core_loaded,
                                                      vm["clusters"].as<std::string>());
 
     // Compute all task bottom levels, which is useful for some scheduling options
     scheduler->computeBottomLevels(workflow);
     scheduler->computeNumbersOfChildren(workflow);
+
 
     // Create the WMS
     auto wms = simulation->add(
@@ -387,7 +386,10 @@ int main(int argc, char **argv) {
                           disable_adaptation_if_noise_has_not_changed,
                           at_most_one_noise_reduction,
                           at_most_one_adaptation,
-                          compute_services, storage_services, wms_host));
+                          compute_services, storage_services, wms_host,
+                          initial_load_max_duration,
+                          initial_load_duration_seed,
+                          initial_load_prob_core_loaded));
 
     // Set the amdahl parameter for each task between 0.5 and 0.9
     std::uniform_real_distribution<double> random_dist(min_task_parallel_efficiency, max_task_parallel_efficiency);
@@ -395,6 +397,8 @@ int main(int argc, char **argv) {
     for (auto const &t : workflow->getTasks()) {
         t->setParallelModel(wrench::ParallelModel::AMDAHL(random_dist(rng)));
     }
+
+
 
     // Stage all input files on the WMS Storage Service
     for (const auto &f : workflow->getInputFiles()) {

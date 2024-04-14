@@ -39,7 +39,10 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                      bool at_most_one_adaptation,
                      std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
                      std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-                     const std::string &hostname) : wrench::ExecutionController(
+                     const std::string &hostname,
+                     double initial_load_max_duration,
+                     int initial_load_duration_seed,
+                     double initial_load_prob_core_loaded) : wrench::ExecutionController(
         hostname,
         "simple"),
                                                     workflow(std::move(workflow)),
@@ -61,7 +64,10 @@ SimpleWMS::SimpleWMS(SimpleStandardJobScheduler *scheduler,
                                                     at_most_one_noise_reduction(at_most_one_noise_reduction),
                                                     at_most_one_adaptation(at_most_one_adaptation),
                                                     compute_services(std::move(compute_services)),
-                                                    storage_services(std::move(storage_services)) { }
+                                                    storage_services(std::move(storage_services)),
+                                                    initial_load_max_duration(initial_load_max_duration),
+                                                    initial_load_duration_seed(initial_load_duration_seed),
+                                                    initial_load_prob_core_loaded(initial_load_prob_core_loaded) { }
 
 
 void SimpleWMS::compute_micro_simulation_noise(wrench::Simulation *simulation,
@@ -262,7 +268,10 @@ int SimpleWMS::main() {
     this->scheduler->init(this->job_manager,
                           this->compute_services,
                           this->storage_services,
-                          wrench::Simulation::getHostName());
+                          wrench::Simulation::getHostName(),
+                          initial_load_max_duration,
+                          initial_load_duration_seed,
+                          initial_load_prob_core_loaded);
 
     // Compute the total work
     double total_work = 0.0;

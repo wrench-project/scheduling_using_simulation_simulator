@@ -39,7 +39,10 @@ public:
               bool at_most_one_adaptation,
               std::set<std::shared_ptr<wrench::BareMetalComputeService>> compute_services,
               std::set<std::shared_ptr<wrench::StorageService>> storage_services,
-              const std::string &hostname);
+              const std::string &hostname,
+              double initial_load_max_duration,
+              int initial_load_duration_seed,
+              double initial_load_prob_core_loaded);
 
     std::vector<unsigned long> getAlgorithmSequence() { return this->algorithm_sequence; }
 
@@ -104,6 +107,9 @@ private:
 
     std::vector<unsigned long> algorithm_sequence;
 
+    double initial_load_max_duration;
+    int initial_load_duration_seed;
+    double initial_load_prob_core_loaded;
 
 };
 

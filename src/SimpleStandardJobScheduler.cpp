@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <algorithm>
+#include "InitialLoadCreator.h"
 
 XBT_LOG_NEW_DEFAULT_CATEGORY(simple_scheduler, "Log category for Simple Scheduler");
 
@@ -29,7 +30,10 @@ void SimpleStandardJobScheduler::init(
         std::shared_ptr<wrench::JobManager> _job_manager,
         std::set<std::shared_ptr<wrench::BareMetalComputeService>> _compute_services,
         std::set<std::shared_ptr<wrench::StorageService>> _storage_services,
-        std::string wms_host) {
+        std::string wms_host,
+        double initial_load_max_duration,
+        int initial_load_duration_seed,
+        double initial_load_prob_core_loaded) {
     this->job_manager = std::move(_job_manager);
     this->storage_services = std::move(_storage_services);
     this->compute_services = std::move(_compute_services);
@@ -54,6 +58,14 @@ void SimpleStandardJobScheduler::init(
         auto core_flop_rates = cs->getCoreFlopRate();
         this->core_flop_rate_map[cs] = (*(core_flop_rates.begin())).second;
     }
+
+    // Create all initial load
+    InitialLoadCreator::create_initial_load(initial_load_max_duration,
+            initial_load_duration_seed,
+            initial_load_prob_core_loaded,
+            this->idle_cores_map);
+
+
 
 }
 
@@ -414,4 +426,10 @@ void SimpleStandardJobScheduler::useSchedulingAlgorithmThen(unsigned long schedu
     }
     this->upcoming_scheduling_algorithm = scheduler_index;
     this->upcoming_scheduling_algorithm_activation_date = date;
+}
+
+void SimpleStandardJobScheduler::createInitialLoad(int initial_load_max_duration,
+                                                   int initial_load_duration_seed,
+                                                   double initial_load_prob_core_loaded) {
+
 }

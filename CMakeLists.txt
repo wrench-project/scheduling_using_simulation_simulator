@@ -38,6 +38,8 @@ set(SOURCE_FILES
         src/PlatformCreator.h
         src/WorkflowCreator.cpp
         src/WorkflowCreator.h
+        src/InitialLoadCreator.cpp
+        src/InitialLoadCreator.h
         )
 
 # test files
